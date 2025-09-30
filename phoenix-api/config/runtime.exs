@@ -7,6 +7,24 @@ import Config
 # any compile-time configuration in here, as it won't be applied.
 # The block below contains prod specific runtime configuration.
 
+# Person module URLs configuration
+if config_env() != :test do
+  # Require environment variables for non-test environments
+  config :phoenix_api, :person,
+    male_first_name_url:
+      System.get_env("MALE_FIRST_NAME_URL") ||
+        raise("Environment variable MALE_FIRST_NAME_URL is required but not set."),
+    male_last_name_url:
+      System.get_env("MALE_LAST_NAME_URL") ||
+        raise("Environment variable MALE_LAST_NAME_URL is required but not set."),
+    female_first_name_url:
+      System.get_env("FEMALE_FIRST_NAME_URL") ||
+        raise("Environment variable FEMALE_FIRST_NAME_URL is required but not set."),
+    female_last_name_url:
+      System.get_env("FEMALE_LAST_NAME_URL") ||
+        raise("Environment variable FEMALE_LAST_NAME_URL is required but not set.")
+end
+
 # ## Using releases
 #
 # If you use `mix release`, you need to explicitly enable the server

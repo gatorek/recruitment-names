@@ -117,6 +117,7 @@ defmodule PhoenixApi.Schemas.PersonTest do
 
     test "invalid changeset when first_name is too long" do
       long_name = String.duplicate("A", 256)
+
       attrs = %{
         first_name: long_name,
         last_name: "Kowalski",
@@ -132,6 +133,7 @@ defmodule PhoenixApi.Schemas.PersonTest do
 
     test "invalid changeset when last_name is too long" do
       long_name = String.duplicate("A", 256)
+
       attrs = %{
         first_name: "Jan",
         last_name: long_name,
@@ -161,6 +163,7 @@ defmodule PhoenixApi.Schemas.PersonTest do
 
     test "valid changeset with maximum length names" do
       long_name = String.duplicate("A", 255)
+
       attrs = %{
         first_name: long_name,
         last_name: long_name,
