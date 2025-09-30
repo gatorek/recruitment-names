@@ -25,9 +25,14 @@ defmodule PhoenixApi.ApiClient do
       iex> PhoenixApi.ApiClient.call("invalid-url", 5)
       {:error, :invalid_url}
   """
+  @type url :: binary()
+  @type count :: pos_integer()
+  @type name :: binary()
+  @type error_details :: atom() | {atom(), any()}
 
   @separator ","
 
+  @spec call(url, count) :: {:ok, [name]} | {:error, error_details}
   def call(url, count) when is_binary(url) and is_integer(count) and count > 0 do
     # Validate URL format
     case URI.parse(url) do

@@ -46,7 +46,7 @@ defmodule PhoenixApi.ApiClientTest do
       end)
 
       assert {:error, {:connection_error, :nxdomain}} =
-        PhoenixApi.ApiClient.call("https://invalid-url.com/data.csv", 3)
+               PhoenixApi.ApiClient.call("https://invalid-url.com/data.csv", 3)
     end
 
     test "returns error when HTTP response is not 200" do
@@ -55,7 +55,7 @@ defmodule PhoenixApi.ApiClientTest do
       end)
 
       assert {:error, {:http_error, 404}} =
-        PhoenixApi.ApiClient.call("https://example.com/names.csv", 3)
+               PhoenixApi.ApiClient.call("https://example.com/names.csv", 3)
     end
 
     test "returns error when CSV is empty" do
@@ -64,7 +64,7 @@ defmodule PhoenixApi.ApiClientTest do
       end)
 
       assert {:error, :empty_csv} =
-        PhoenixApi.ApiClient.call("https://example.com/empty.csv", 3)
+               PhoenixApi.ApiClient.call("https://example.com/empty.csv", 3)
     end
 
     test "returns error when CSV has only header" do
@@ -75,7 +75,7 @@ defmodule PhoenixApi.ApiClientTest do
       end)
 
       assert {:error, :insufficient_data} =
-        PhoenixApi.ApiClient.call("https://example.com/header-only.csv", 3)
+               PhoenixApi.ApiClient.call("https://example.com/header-only.csv", 3)
     end
 
     test "returns error when requesting more names than available" do
@@ -90,7 +90,7 @@ defmodule PhoenixApi.ApiClientTest do
       end)
 
       assert {:error, :insufficient_data} =
-        PhoenixApi.ApiClient.call("https://example.com/short.csv", 5)
+               PhoenixApi.ApiClient.call("https://example.com/short.csv", 5)
     end
 
     test "returns error for invalid parameters" do
@@ -138,7 +138,8 @@ defmodule PhoenixApi.ApiClientTest do
     end
 
     test "handles CSV with Windows line endings" do
-      csv_data = "IMIĘ_DRUGIE,PŁEĆ,LICZBA_WYSTĄPIEŃ\r\nJAN,MĘŻCZYZNA,638369\r\nPIOTR,MĘŻCZYZNA,603682\r\n"
+      csv_data =
+        "IMIĘ_DRUGIE,PŁEĆ,LICZBA_WYSTĄPIEŃ\r\nJAN,MĘŻCZYZNA,638369\r\nPIOTR,MĘŻCZYZNA,603682\r\n"
 
       stub(Req, :get, fn "https://example.com/names.csv" ->
         {:ok, %Req.Response{status: 200, body: csv_data}}
@@ -149,7 +150,8 @@ defmodule PhoenixApi.ApiClientTest do
     end
 
     test "handles CSV with mixed line endings" do
-      csv_data = "IMIĘ_DRUGIE,PŁEĆ,LICZBA_WYSTĄPIEŃ\nJAN,MĘŻCZYZNA,638369\r\nPIOTR,MĘŻCZYZNA,603682\n"
+      csv_data =
+        "IMIĘ_DRUGIE,PŁEĆ,LICZBA_WYSTĄPIEŃ\nJAN,MĘŻCZYZNA,638369\r\nPIOTR,MĘŻCZYZNA,603682\n"
 
       stub(Req, :get, fn "https://example.com/names.csv" ->
         {:ok, %Req.Response{status: 200, body: csv_data}}

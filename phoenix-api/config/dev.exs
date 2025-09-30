@@ -24,7 +24,11 @@ config :phoenix_api, PhoenixApiWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: System.get_env("SECRET_KEY_BASE", "1OxZKqb6K4qY00qW66qAWCH+t0TrSGjiHcxwiOo0cg3vNR1tpOtVIcfobG1GKGkKQ"),
+  secret_key_base:
+    System.get_env(
+      "SECRET_KEY_BASE",
+      "1OxZKqb6K4qY00qW66qAWCH+t0TrSGjiHcxwiOo0cg3vNR1tpOtVIcfobG1GKGkKQ"
+    ),
   watchers: []
 
 # ## SSL Support
