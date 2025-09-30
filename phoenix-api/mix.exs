@@ -26,7 +26,10 @@ defmodule PhoenixApi.MixProject do
 
   def cli do
     [
-      preferred_envs: [precommit: :test]
+      preferred_envs: [
+        precommit: :test,
+        "test.all": :test
+      ]
     ]
   end
 
@@ -48,7 +51,9 @@ defmodule PhoenixApi.MixProject do
       {:gettext, "~> 0.26"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+      {:req, "~> 0.5"},
+      {:mimic, "~> 1.7", only: :test}
     ]
   end
 
@@ -64,6 +69,7 @@ defmodule PhoenixApi.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
+      "test.all": ["ecto.create --quiet", "ecto.migrate --quiet", "test --include skip"],
       precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"]
     ]
   end
