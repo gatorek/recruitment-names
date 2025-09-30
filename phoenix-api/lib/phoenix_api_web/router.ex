@@ -5,7 +5,9 @@ defmodule PhoenixApiWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/api", PhoenixApiWeb do
+  scope "/", PhoenixApiWeb do
     pipe_through :api
+
+    post "/import", PersonsController, :import
   end
 end
