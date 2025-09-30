@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:14.19-alpine
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  phoenix:
+    build:
+      context: ./phoenix-api
+      dockerfile: Dockerfile.dev
+    env_file:
+      - .env
+    ports:
+      - "${PORT:-4000}:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./phoenix-api:/app
+    command: >
+      sh -c "
+        mix deps.get &&
+        mix phx.server
+      "
+
+volumes:
+  postgres_data:

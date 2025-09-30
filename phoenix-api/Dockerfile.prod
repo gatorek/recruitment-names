@@ -1,0 +1,28 @@
+FROM elixir:1.18.4-otp-27-alpine
+
+RUN addgroup -g 1000 app && \
+    adduser -D -s /bin/sh -u 1000 -G app app
+
+WORKDIR /app
+
+RUN chown -R app:app /app
+
+USER app
+
+RUN mix local.hex --force && \
+    mix local.rebar --force
+
+COPY --chown=app:app mix.exs mix.lock ./
+
+RUN mix deps.get --only prod
+
+COPY --chown=app:app . .
+
+RUN mix compile
+
+EXPOSE 4000
+
+ENV MIX_ENV=prod
+ENV PORT=4000
+
+CMD ["mix", "phx.server"]
