@@ -2,7 +2,7 @@ defmodule PhoenixApi.PersonsTest do
   use ExUnit.Case, async: false
   import Mimic
 
-  alias PhoenixApi.Persons, as: Person
+  alias PhoenixApi.Persons
   alias PhoenixApi.ApiClient
   alias PhoenixApi.Repo
   alias PhoenixApi.Schemas.Person, as: PersonSchema
@@ -71,7 +71,7 @@ defmodule PhoenixApi.PersonsTest do
         top: 5
       }
 
-      assert {:ok, count} = Person.import(params)
+      assert {:ok, count} = Persons.import(params)
       assert count == 3
 
       # Check that persons were saved to database
@@ -128,7 +128,7 @@ defmodule PhoenixApi.PersonsTest do
         }
       }
 
-      assert {:ok, count} = Person.import(params)
+      assert {:ok, count} = Persons.import(params)
       # default count
       assert count == 100
 
@@ -166,7 +166,7 @@ defmodule PhoenixApi.PersonsTest do
         top: 3
       }
 
-      assert {:ok, count} = Person.import(params)
+      assert {:ok, count} = Persons.import(params)
       assert count == 2
 
       # Check that persons were saved to database
@@ -212,7 +212,7 @@ defmodule PhoenixApi.PersonsTest do
         top: 1
       }
 
-      assert {:error, :invalid_date_range} = Person.import(params)
+      assert {:error, :invalid_date_range} = Persons.import(params)
     end
 
     test "returns error when ApiClient fails" do
@@ -242,7 +242,7 @@ defmodule PhoenixApi.PersonsTest do
         top: 1
       }
 
-      assert {:error, :invalid_url} = Person.import(params)
+      assert {:error, :invalid_url} = Persons.import(params)
     end
 
     test "generates empty list when count is 0" do
@@ -281,7 +281,7 @@ defmodule PhoenixApi.PersonsTest do
         top: 1
       }
 
-      assert {:ok, count} = Person.import(params)
+      assert {:ok, count} = Persons.import(params)
       assert count == 0
 
       # Check that no persons were saved to database
@@ -326,7 +326,7 @@ defmodule PhoenixApi.PersonsTest do
         top: 1
       }
 
-      assert {:ok, count} = Person.import(params)
+      assert {:ok, count} = Persons.import(params)
       assert count == 1
 
       # Check that persons were saved to database
@@ -371,7 +371,7 @@ defmodule PhoenixApi.PersonsTest do
         top: 5
       }
 
-      assert {:ok, count} = Person.import(params)
+      assert {:ok, count} = Persons.import(params)
       assert count == 100
 
       # Check that persons were saved to database
@@ -402,7 +402,7 @@ defmodule PhoenixApi.PersonsTest do
         top: 10
       }
 
-      assert {:ok, count} = Person.import(params)
+      assert {:ok, count} = Persons.import(params)
       assert count == 5
 
       # Check that persons were saved to database
@@ -419,5 +419,295 @@ defmodule PhoenixApi.PersonsTest do
         assert String.length(person.last_name) > 0
       end
     end
+  end
+
+  describe "list_persons" do
+    test "returns empty list when no persons exist" do
+      {:ok, result} = Persons.list_persons(%{})
+
+      assert result == []
+    end
+
+    test "returns list of persons" do
+      # Create test users
+      _users = create_test_users(5)
+
+      {:ok, result} = Persons.list_persons(%{})
+
+      assert length(result) == 5
+    end
+
+    test "filters by first_name" do
+      create_test_users([
+        %{first_name: "John", last_name: "Doe", gender: :male, birthdate: ~D[1990-01-01]},
+        %{first_name: "Jane", last_name: "Smith", gender: :female, birthdate: ~D[1995-05-15]},
+        %{first_name: "Johnny", last_name: "Walker", gender: :male, birthdate: ~D[1985-12-10]}
+      ])
+
+      {:ok, result} = Persons.list_persons(%{first_name: "John"})
+
+      assert length(result) == 2
+      assert Enum.all?(result, fn person -> String.contains?(person.first_name, "John") end)
+    end
+
+    test "filters by part of first_name" do
+      create_test_users([
+        %{first_name: "John", last_name: "Doe", gender: :male, birthdate: ~D[1990-01-01]},
+        %{first_name: "Jane", last_name: "Smith", gender: :female, birthdate: ~D[1995-05-15]},
+        %{first_name: "Johnny", last_name: "Walker", gender: :male, birthdate: ~D[1985-12-10]}
+      ])
+
+      {:ok, result} = Persons.list_persons(%{first_name: "ohn"})
+
+      assert length(result) == 2
+      assert Enum.all?(result, fn person -> String.contains?(person.first_name, "ohn") end)
+    end
+
+    test "filters by last_name" do
+      create_test_users([
+        %{first_name: "John", last_name: "Doe", gender: :male, birthdate: ~D[1990-01-01]},
+        %{first_name: "Jane", last_name: "Smith", gender: :female, birthdate: ~D[1995-05-15]},
+        %{first_name: "Bob", last_name: "Smith", gender: :male, birthdate: ~D[1985-12-10]}
+      ])
+
+      {:ok, result} = Persons.list_persons(%{last_name: "Smith"})
+
+      assert length(result) == 2
+      assert Enum.all?(result, fn person -> String.contains?(person.last_name, "Smith") end)
+    end
+
+    test "filters by gender" do
+      create_test_users([
+        %{first_name: "John", last_name: "Doe", gender: :male, birthdate: ~D[1990-01-01]},
+        %{first_name: "Jane", last_name: "Smith", gender: :female, birthdate: ~D[1995-05-15]},
+        %{first_name: "Bob", last_name: "Johnson", gender: :male, birthdate: ~D[1985-12-10]}
+      ])
+
+      {:ok, result} = Persons.list_persons(%{gender: :female})
+
+      assert length(result) == 1
+      assert hd(result).gender == :female
+    end
+
+    test "filters by birthdate range" do
+      create_test_users([
+        %{first_name: "John", last_name: "Doe", gender: :male, birthdate: ~D[1990-01-01]},
+        %{first_name: "Jane", last_name: "Smith", gender: :female, birthdate: ~D[1995-05-15]},
+        %{first_name: "Bob", last_name: "Johnson", gender: :male, birthdate: ~D[2000-12-10]}
+      ])
+
+      {:ok, result} =
+        Persons.list_persons(%{
+          birthdate_from: ~D[1990-01-01],
+          birthdate_to: ~D[1999-12-31]
+        })
+
+      assert length(result) == 2
+    end
+
+    test "sorts by first_name ascending" do
+      create_test_users([
+        %{first_name: "Charlie", last_name: "Brown", gender: :male, birthdate: ~D[1990-01-01]},
+        %{first_name: "Alice", last_name: "Smith", gender: :female, birthdate: ~D[1995-05-15]},
+        %{first_name: "Bob", last_name: "Johnson", gender: :male, birthdate: ~D[1985-12-10]}
+      ])
+
+      {:ok, result} = Persons.list_persons(%{sort: :first_name, order: :asc})
+
+      first_names = Enum.map(result, & &1.first_name)
+      assert first_names == ["Alice", "Bob", "Charlie"]
+    end
+
+    test "sorts by birthdate descending" do
+      create_test_users([
+        %{first_name: "John", last_name: "Doe", gender: :male, birthdate: ~D[1990-01-01]},
+        %{first_name: "Jane", last_name: "Smith", gender: :female, birthdate: ~D[1995-05-15]},
+        %{first_name: "Bob", last_name: "Johnson", gender: :male, birthdate: ~D[1985-12-10]}
+      ])
+
+      {:ok, result} = Persons.list_persons(%{sort: :birthdate, order: :desc})
+
+      birthdates = Enum.map(result, & &1.birthdate)
+      assert birthdates == [~D[1995-05-15], ~D[1990-01-01], ~D[1985-12-10]]
+    end
+  end
+
+  describe "get_person" do
+    test "returns person when found" do
+      user =
+        create_test_user(%{
+          first_name: "John",
+          last_name: "Doe",
+          gender: :male,
+          birthdate: ~D[1990-01-01]
+        })
+
+      {:ok, result} = Persons.get_person(user.id)
+
+      assert result.id == user.id
+      assert result.first_name == "John"
+      assert result.last_name == "Doe"
+      assert result.gender == :male
+      assert result.birthdate == ~D[1990-01-01]
+    end
+
+    test "returns error when person not found" do
+      assert {:error, :not_found} = Persons.get_person(999_999)
+    end
+  end
+
+  describe "create_person" do
+    test "creates person with valid data" do
+      attrs = %{
+        first_name: "John",
+        last_name: "Doe",
+        gender: :male,
+        birthdate: ~D[1990-01-01]
+      }
+
+      {:ok, person} = Persons.create_person(attrs)
+
+      assert person.first_name == "John"
+      assert person.last_name == "Doe"
+      assert person.gender == :male
+      assert person.birthdate == ~D[1990-01-01]
+      assert person.id
+    end
+
+    test "returns validation errors for invalid data" do
+      attrs = %{
+        first_name: "",
+        last_name: "",
+        gender: :male,
+        # Invalid date format
+        birthdate: "invalid-date"
+      }
+
+      {:error, changeset} = Persons.create_person(attrs)
+
+      assert changeset.errors[:first_name]
+      assert changeset.errors[:last_name]
+      assert changeset.errors[:birthdate]
+    end
+
+    test "returns validation errors for missing required fields" do
+      {:error, changeset} = Persons.create_person(%{})
+
+      assert changeset.errors[:first_name]
+      assert changeset.errors[:last_name]
+      assert changeset.errors[:gender]
+      assert changeset.errors[:birthdate]
+    end
+  end
+
+  describe "update_person" do
+    test "updates person with valid data" do
+      user =
+        create_test_user(%{
+          first_name: "John",
+          last_name: "Doe",
+          gender: :male,
+          birthdate: ~D[1990-01-01]
+        })
+
+      attrs = %{
+        "first_name" => "Jane",
+        "last_name" => "Smith",
+        "gender" => "female",
+        "birthdate" => "1995-05-15"
+      }
+
+      {:ok, updated_person} = Persons.update_person(user.id, attrs)
+
+      assert updated_person.id == user.id
+      assert updated_person.first_name == "Jane"
+      assert updated_person.last_name == "Smith"
+      assert updated_person.gender == :female
+      assert updated_person.birthdate == ~D[1995-05-15]
+    end
+
+    test "returns error when person not found" do
+      attrs = %{
+        first_name: "Jane",
+        last_name: "Smith"
+      }
+
+      assert {:error, :not_found} = Persons.update_person(999_999, attrs)
+    end
+
+    test "returns validation errors for invalid data" do
+      user =
+        create_test_user(%{
+          first_name: "John",
+          last_name: "Doe",
+          gender: :male,
+          birthdate: ~D[1990-01-01]
+        })
+
+      invalid_attrs = %{
+        first_name: "",
+        last_name: "",
+        gender: :male,
+        # Invalid date format
+        birthdate: "invalid-date"
+      }
+
+      {:error, changeset} = Persons.update_person(user.id, invalid_attrs)
+
+      assert changeset.errors[:first_name]
+      assert changeset.errors[:last_name]
+      assert changeset.errors[:birthdate]
+    end
+  end
+
+  describe "delete_person" do
+    test "deletes person when found" do
+      user =
+        create_test_user(%{
+          first_name: "John",
+          last_name: "Doe",
+          gender: :male,
+          birthdate: ~D[1990-01-01]
+        })
+
+      assert :ok = Persons.delete_person(user.id)
+      assert {:error, :not_found} = Persons.get_person(user.id)
+    end
+
+    test "returns error when person not found" do
+      assert {:error, :not_found} = Persons.delete_person(999_999)
+    end
+  end
+
+  # Helper functions for CRUD tests
+
+  defp create_test_user(attrs) do
+    default_attrs = %{
+      first_name: "Test",
+      last_name: "User",
+      gender: :male,
+      birthdate: ~D[1990-01-01]
+    }
+
+    attrs = Map.merge(default_attrs, attrs)
+
+    %PersonSchema{}
+    |> PersonSchema.changeset(attrs)
+    |> Repo.insert!()
+  end
+
+  defp create_test_users(count) when is_integer(count) do
+    for i <- 1..count do
+      create_test_user(%{
+        first_name: "User#{i}",
+        last_name: "LastName#{i}",
+        gender: if(rem(i, 2) == 0, do: :female, else: :male),
+        birthdate: Date.add(~D[1990-01-01], i)
+      })
+    end
+  end
+
+  defp create_test_users(users_list) when is_list(users_list) do
+    Enum.map(users_list, &create_test_user/1)
   end
 end

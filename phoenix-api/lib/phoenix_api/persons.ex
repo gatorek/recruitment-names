@@ -11,6 +11,8 @@ defmodule PhoenixApi.Persons do
   alias PhoenixApi.Repo
   alias PhoenixApi.Schemas.Person
 
+  import Ecto.Query
+
   @type url_map :: %{
           male: %{
             first_name: String.t(),
@@ -28,6 +30,16 @@ defmodule PhoenixApi.Persons do
           birth_date_to: Date.t(),
           count: pos_integer(),
           top: pos_integer()
+        }
+
+  @type filter_params :: %{
+          first_name: String.t() | nil,
+          last_name: String.t() | nil,
+          gender: atom() | nil,
+          birthdate_from: Date.t() | nil,
+          birthdate_to: Date.t() | nil,
+          sort: String.t() | nil,
+          order: String.t() | nil
         }
 
   # Default values
@@ -77,7 +89,7 @@ defmodule PhoenixApi.Persons do
   """
   @spec import(map()) :: {:ok, non_neg_integer()} | {:error, any()}
   def import(params) do
-    with {:ok, processed_params} <- process_params(params),
+    with {:ok, processed_params} <- process_import_params(params),
          {:ok, names} <- fetch_names(processed_params),
          {:ok, count} <- save_persons(names, processed_params) do
       {:ok, count}
@@ -86,8 +98,8 @@ defmodule PhoenixApi.Persons do
     end
   end
 
-  @spec process_params(map()) :: {:ok, import_params()} | {:error, atom()}
-  defp process_params(params) do
+  @spec process_import_params(map()) :: {:ok, import_params()} | {:error, atom()}
+  defp process_import_params(params) do
     urls = get_urls(params)
     birth_date_from = Map.get(params, :birth_date_from, @default_birth_date_from)
     birth_date_to = Map.get(params, :birth_date_to, @default_birth_date_to)
@@ -185,4 +197,173 @@ defmodule PhoenixApi.Persons do
       {count, _} -> {:ok, count}
     end
   end
+
+  # CRUD Operations
+
+  @doc """
+  Lists persons with filtering and sorting.
+
+  ## Parameters
+
+  - `params` - A map containing filter and sort parameters
+
+  ## Returns
+
+  - `{:ok, [Person.t()]}` - List of persons
+  """
+  @spec list_persons(map()) :: {:ok, [Person.t()]}
+  def list_persons(params) do
+    persons =
+      params
+      |> build_query()
+      |> Repo.all()
+
+    {:ok, persons}
+  end
+
+  @doc """
+  Gets a person by ID.
+
+  ## Parameters
+
+  - `id` - Person ID
+
+  ## Returns
+
+  - `{:ok, person}` - Person data
+  - `{:error, :not_found}` - Person not found
+  """
+  @spec get_person(integer()) :: {:ok, Person.t()} | {:error, :not_found}
+  def get_person(id) do
+    case Repo.get(Person, id) do
+      nil -> {:error, :not_found}
+      person -> {:ok, person}
+    end
+  end
+
+  @doc """
+  Creates a new person.
+
+  ## Parameters
+
+  - `attrs` - Person attributes
+
+  ## Returns
+
+  - `{:ok, person}` - Created person
+  - `{:error, changeset}` - Validation errors
+  """
+  @spec create_person(map()) :: {:ok, Person.t()} | {:error, Ecto.Changeset.t()}
+  def create_person(attrs) do
+    %Person{}
+    |> Person.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates an existing person.
+
+  ## Parameters
+
+  - `id` - Person ID
+  - `attrs` - Updated attributes
+
+  ## Returns
+
+  - `{:ok, person}` - Updated person
+  - `{:error, :not_found}` - Person not found
+  - `{:error, changeset}` - Validation errors
+  """
+  @spec update_person(integer(), map()) ::
+          {:ok, Person.t()} | {:error, :not_found | Ecto.Changeset.t()}
+  def update_person(id, attrs) do
+    case Repo.get(Person, id) do
+      nil ->
+        {:error, :not_found}
+
+      person ->
+        person
+        |> Person.changeset(attrs)
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Deletes a person.
+
+  ## Parameters
+
+  - `id` - Person ID
+
+  ## Returns
+
+  - `:ok` - Successfully deleted
+  - `{:error, :not_found}` - Person not found
+  """
+  @spec delete_person(integer()) :: :ok | {:error, :not_found}
+  def delete_person(id) do
+    case Repo.get(Person, id) do
+      nil ->
+        {:error, :not_found}
+
+      person ->
+        Repo.delete(person)
+        :ok
+    end
+  end
+
+  # Private helper functions for query building
+
+  defp build_query(params) do
+    Person
+    |> filter_by_first_name(params[:first_name])
+    |> filter_by_last_name(params[:last_name])
+    |> filter_by_gender(params[:gender])
+    |> filter_by_birthdate_from(params[:birthdate_from])
+    |> filter_by_birthdate_to(params[:birthdate_to])
+    |> apply_sorting(params[:sort], params[:order])
+  end
+
+  defp filter_by_first_name(query, nil), do: query
+
+  defp filter_by_first_name(query, first_name) do
+    where(query, [p], ilike(p.first_name, ^"%#{first_name}%"))
+  end
+
+  defp filter_by_last_name(query, nil), do: query
+
+  defp filter_by_last_name(query, last_name) do
+    where(query, [p], ilike(p.last_name, ^"%#{last_name}%"))
+  end
+
+  defp filter_by_gender(query, nil), do: query
+
+  defp filter_by_gender(query, gender) do
+    where(query, [p], p.gender == ^gender)
+  end
+
+  defp filter_by_birthdate_from(query, nil), do: query
+
+  defp filter_by_birthdate_from(query, from_date = %Date{}) do
+    where(query, [p], p.birthdate >= ^from_date)
+  end
+
+  defp filter_by_birthdate_to(query, nil), do: query
+
+  defp filter_by_birthdate_to(query, to_date = %Date{}) do
+    where(query, [p], p.birthdate <= ^to_date)
+  end
+
+  defp apply_sorting(query, nil, _), do: order_by(query, [p], asc: p.id)
+
+  defp apply_sorting(query, sort_field, order) do
+    case sort_field do
+      :first_name -> order_by(query, [p], [{^order, p.first_name}])
+      :last_name -> order_by(query, [p], [{^order, p.last_name}])
+      :gender -> order_by(query, [p], [{^order, p.gender}])
+      :birthdate -> order_by(query, [p], [{^order, p.birthdate}])
+    end
+  end
+
+  defp apply_sorting(query, _, _), do: order_by(query, [p], asc: p.id)
 end

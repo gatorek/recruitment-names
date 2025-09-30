@@ -6,6 +6,8 @@ defmodule PhoenixApi.Schemas.Person do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @derive {Jason.Encoder, only: [:id, :first_name, :last_name, :gender, :birthdate]}
+
   schema "persons" do
     field :first_name, :string
     field :last_name, :string
