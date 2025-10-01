@@ -367,6 +367,162 @@ class PhoenixApiServiceTest extends TestCase
         });
     }
 
+    public function testUpdate(): void
+    {
+        $userData = [
+            'id' => 1,
+            'first_name' => 'JANE',
+            'last_name' => 'SMITH',
+            'gender' => 'female',
+            'birthdate' => '1995-05-15'
+        ];
+
+        $mockResponse = new MockResponse(json_encode([
+            'data' => $userData
+        ]), [
+            'http_code' => 200,
+            'response_headers' => ['Content-Type' => 'application/json']
+        ]);
+
+        $httpClient = $this->createMockHttpClientForUpdate($userData, $mockResponse);
+        $service = new PhoenixApiService($httpClient, 'localhost', 4000);
+
+        $user = new UserDTO(
+            id: 1,
+            firstName: 'JANE',
+            lastName: 'SMITH',
+            gender: 'female',
+            birthdate: new \DateTime('1995-05-15')
+        );
+
+        $updatedUser = $service->update($user);
+
+        $this->assertInstanceOf(UserDTO::class, $updatedUser);
+        $this->assertEquals(1, $updatedUser->id);
+        $this->assertEquals('JANE', $updatedUser->firstName);
+        $this->assertEquals('SMITH', $updatedUser->lastName);
+        $this->assertEquals('female', $updatedUser->gender);
+        $this->assertEquals('1995-05-15', $updatedUser->birthdate->format('Y-m-d'));
+    }
+
+    public function testUpdateNotFound(): void
+    {
+        $userData = [
+            'id' => 999,
+            'first_name' => 'JANE',
+            'last_name' => 'SMITH',
+            'gender' => 'female',
+            'birthdate' => '1995-05-15'
+        ];
+
+        $mockResponse = new MockResponse('', [
+            'http_code' => 404
+        ]);
+
+        $httpClient = $this->createMockHttpClientForUpdate($userData, $mockResponse);
+        $service = new PhoenixApiService($httpClient, 'localhost', 4000);
+
+        $user = new UserDTO(
+            id: 999,
+            firstName: 'JANE',
+            lastName: 'SMITH',
+            gender: 'female',
+            birthdate: new \DateTime('1995-05-15')
+        );
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('API returned status code: 404');
+
+        $service->update($user);
+    }
+
+    public function testUpdateApiError(): void
+    {
+        $userData = [
+            'id' => 1,
+            'first_name' => 'JANE',
+            'last_name' => 'SMITH',
+            'gender' => 'female',
+            'birthdate' => '1995-05-15'
+        ];
+
+        $mockResponse = new MockResponse('', [
+            'http_code' => 500
+        ]);
+
+        $httpClient = $this->createMockHttpClientForUpdate($userData, $mockResponse);
+        $service = new PhoenixApiService($httpClient, 'localhost', 4000);
+
+        $user = new UserDTO(
+            id: 1,
+            firstName: 'JANE',
+            lastName: 'SMITH',
+            gender: 'female',
+            birthdate: new \DateTime('1995-05-15')
+        );
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('API returned status code: 500');
+
+        $service->update($user);
+    }
+
+    public function testUpdateWithValidationError(): void
+    {
+        $userData = [
+            'id' => 1,
+            'first_name' => 'JANE',
+            'last_name' => 'SMITH',
+            'gender' => 'female',
+            'birthdate' => '1995-05-15'
+        ];
+
+        $mockResponse = new MockResponse(json_encode([
+            'errors' => [
+                'first_name' => ['can\'t be blank']
+            ]
+        ]), [
+            'http_code' => 422,
+            'response_headers' => ['Content-Type' => 'application/json']
+        ]);
+
+        $httpClient = $this->createMockHttpClientForUpdate($userData, $mockResponse);
+        $service = new PhoenixApiService($httpClient, 'localhost', 4000);
+
+        $user = new UserDTO(
+            id: 1,
+            firstName: 'JANE',
+            lastName: 'SMITH',
+            gender: 'female',
+            birthdate: new \DateTime('1995-05-15')
+        );
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('API returned status code: 422');
+
+        $service->update($user);
+    }
+
+    /**
+     * Create MockHttpClient for update operations with request body verification
+     */
+    private function createMockHttpClientForUpdate(array $expectedUserData, MockResponse $mockResponse): MockHttpClient
+    {
+        return new MockHttpClient(function ($method, $url, $options) use ($expectedUserData, $mockResponse) {
+            // Check HTTP method
+            $this->assertEquals('PUT', $method);
+            
+            // Check URL
+            $this->assertEquals("http://localhost:4000/users/{$expectedUserData['id']}", $url);
+            
+            // Check request body
+            $this->assertArrayHasKey('body', $options);
+            $this->assertEquals(json_encode($expectedUserData), $options['body']);
+
+            return $mockResponse;
+        });
+    }
+
     /**
      * Create MockHttpClient without query parameters verification (for empty/no params)
      */

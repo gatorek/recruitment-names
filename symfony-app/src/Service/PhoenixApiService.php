@@ -123,6 +123,55 @@ class PhoenixApiService
     }
 
     /**
+     * Update an existing user
+     *
+     * @param UserDTO $user User data to update
+     * @return UserDTO Updated user data
+     * @throws \Exception
+     */
+    public function update(UserDTO $user): UserDTO
+    {
+        $url = $this->buildUrl("/users/{$user->id}");
+        
+        // Convert UserDTO to array for request body
+        $userData = $user->toArray();
+        
+        try {
+            $response = $this->httpClient->request('PUT', $url, [
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                ],
+                'body' => json_encode($userData),
+                'timeout' => 30,
+            ]);
+
+            $statusCode = $response->getStatusCode();
+            
+            if ($statusCode !== 200) {
+                throw new \Exception("API returned status code: {$statusCode}");
+            }
+
+            $responseData = $response->toArray();
+            
+            if (empty($responseData) || !isset($responseData['data'])) {
+                throw new \Exception("User with ID {$user->id} not found");
+            }
+
+            $data = $responseData['data'];
+            
+            if (empty($data)) {
+                throw new \Exception("User with ID {$user->id} not found");
+            }
+
+            return UserDTO::fromArray($data);
+
+        } catch (ClientExceptionInterface|DecodingExceptionInterface|RedirectionExceptionInterface|ServerExceptionInterface|TransportExceptionInterface $e) {
+            throw new \Exception("Failed to update user: " . $e->getMessage(), 0, $e);
+        }
+    }
+
+    /**
      * Build query parameters string from filters array
      */
     private function buildQueryParams(array $filters): string
