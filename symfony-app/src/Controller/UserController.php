@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\DTO\UserDTO;
 use App\Exception\InvalidUserIdException;
+use App\Form\UserCreateType;
 use App\Form\UserEditType;
 use App\Service\PhoenixApiService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -17,6 +18,56 @@ class UserController extends AbstractController
     public function __construct(
         private PhoenixApiService $phoenixApiService
     ) {
+    }
+
+    #[Route('/users/create', name: 'user_create', methods: ['GET'])]
+    public function create(Request $request): Response
+    {
+        $form = $this->createForm(UserCreateType::class);
+        
+        return $this->render('user/create.html.twig', [
+            'form' => $form->createView()
+        ]);
+    }
+
+    #[Route('/users/create', name: 'user_store', methods: ['POST'])]
+    public function store(Request $request): Response
+    {
+        $form = $this->createForm(UserCreateType::class);
+        $form->handleRequest($request);
+        
+        if ($form->isSubmitted() && $form->isValid()) {
+            try {
+                // Create UserDTO from form data (without ID for creation)
+                $userDTO = new UserDTO(
+                    id: 0, // Temporary ID, will be ignored by API
+                    firstName: $form->get('firstName')->getData(),
+                    lastName: $form->get('lastName')->getData(),
+                    gender: $form->get('gender')->getData(),
+                    birthdate: $form->get('birthdate')->getData()
+                );
+                
+                // Call Phoenix API to create user
+                $createdUser = $this->phoenixApiService->create($userDTO);
+                
+                $this->addFlash('success', 'User has been created successfully');
+                return $this->redirectToRoute('user_show', ['id' => $createdUser->id]);
+                
+            } catch (\Exception $e) {
+                $this->addFlash('error', 'Failed to create user: ' . $e->getMessage());
+                // Continue to render the form with error
+            }
+        }
+        
+        // Check if form has validation errors
+        if ($form->isSubmitted() && !$form->isValid()) {
+            $this->addFlash('error', 'Please correct the errors below.');
+        }
+        
+        // Always render the form with current data and validation errors
+        return $this->render('user/create.html.twig', [
+            'form' => $form->createView()
+        ]);
     }
 
     #[Route('/users/{id}', name: 'user_show', methods: ['GET'])]

@@ -172,6 +172,56 @@ class PhoenixApiService
     }
 
     /**
+     * Create a new user
+     *
+     * @param UserDTO $user User data to create (without ID)
+     * @return UserDTO Created user data with ID
+     * @throws \Exception
+     */
+    public function create(UserDTO $user): UserDTO
+    {
+        $url = $this->buildUrl('/users');
+        
+        // Convert UserDTO to array for request body (without ID)
+        $userData = $user->toArray();
+        unset($userData['id']); // Remove ID for creation
+        
+        try {
+            $response = $this->httpClient->request('POST', $url, [
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                ],
+                'body' => json_encode($userData),
+                'timeout' => 30,
+            ]);
+
+            $statusCode = $response->getStatusCode();
+            
+            if ($statusCode !== 201) {
+                throw new \Exception("API returned status code: {$statusCode}");
+            }
+
+            $responseData = $response->toArray();
+            
+            if (empty($responseData) || !isset($responseData['data'])) {
+                throw new \Exception("Failed to create user - invalid response format");
+            }
+
+            $data = $responseData['data'];
+            
+            if (empty($data)) {
+                throw new \Exception("Failed to create user - empty response data");
+            }
+
+            return UserDTO::fromArray($data);
+
+        } catch (ClientExceptionInterface|DecodingExceptionInterface|RedirectionExceptionInterface|ServerExceptionInterface|TransportExceptionInterface $e) {
+            throw new \Exception("Failed to create user: " . $e->getMessage(), 0, $e);
+        }
+    }
+
+    /**
      * Build query parameters string from filters array
      */
     private function buildQueryParams(array $filters): string

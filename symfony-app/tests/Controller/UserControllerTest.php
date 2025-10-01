@@ -1291,4 +1291,179 @@ class UserControllerTest extends WebTestCase
         $this->assertEquals('1990-01-15', $birthdateField->attr('value'));
     }
     
+    public function testCreateUserForm(): void
+    {
+        $client = static::createClient();
+        
+        $crawler = $client->request('GET', '/users/create');
+        
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        
+        // Check if form is displayed
+        $this->assertSelectorExists('form');
+        $this->assertSelectorTextContains('.card-title', 'Create New User');
+        
+        // Check if all form fields exist
+        $this->assertSelectorExists('input[name="user_create[firstName]"]');
+        $this->assertSelectorExists('input[name="user_create[lastName]"]');
+        $this->assertSelectorExists('select[name="user_create[gender]"]');
+        $this->assertSelectorExists('input[name="user_create[birthdate]"]');
+        $this->assertSelectorExists('button[name="user_create[save]"]');
+        
+        // Check if submit button has correct text
+        $this->assertSelectorTextContains('button[name="user_create[save]"]', 'Create User');
+        
+        // Check if navigation link exists
+        $this->assertSelectorExists('a[href="/users"]');
+        $this->assertSelectorTextContains('a[href="/users"]', 'Back to User List');
+    }
+    
+    public function testCreateUserSuccess(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService
+        $createdUser = new UserDTO(
+            id: 123,
+            firstName: 'JAN',
+            lastName: 'KOWALSKI',
+            gender: 'male',
+            birthdate: new \DateTime('1990-01-15')
+        );
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('create')
+            ->with($this->callback(function (UserDTO $userDTO) {
+                return $userDTO->id === 0 // Should have temporary ID
+                    && $userDTO->firstName === 'JAN'
+                    && $userDTO->lastName === 'KOWALSKI'
+                    && $userDTO->gender === 'male'
+                    && $userDTO->birthdate->format('Y-m-d') === '1990-01-15';
+            }))
+            ->willReturn($createdUser);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        // Submit form with valid data
+        $client->request('POST', '/users/create', [
+            'user_create' => [
+                'firstName' => 'JAN',
+                'lastName' => 'KOWALSKI',
+                'gender' => 'male',
+                'birthdate' => '1990-01-15',
+                'save' => ''
+            ]
+        ]);
+        
+        // Should redirect to user show page
+        $this->assertResponseRedirects('/users/123');
+    }
+    
+    public function testCreateUserApiError(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService to throw an exception
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('create')
+            ->with($this->callback(function (UserDTO $userDTO) {
+                return $userDTO->id === 0 // Should have temporary ID
+                    && $userDTO->firstName === 'JAN'
+                    && $userDTO->lastName === 'KOWALSKI'
+                    && $userDTO->gender === 'male'
+                    && $userDTO->birthdate->format('Y-m-d') === '1990-01-15';
+            }))
+            ->willThrowException(new \Exception('API connection failed'));
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        // Submit form with valid data
+        $crawler = $client->request('POST', '/users/create', [
+            'user_create' => [
+                'firstName' => 'JAN',
+                'lastName' => 'KOWALSKI',
+                'gender' => 'male',
+                'birthdate' => '1990-01-15',
+                'save' => ''
+            ]
+        ]);
+        
+        // Should render the form with error (no redirect)
+        $this->assertResponseIsSuccessful();
+        
+        // Check if error message is displayed
+        $this->assertSelectorTextContains('.alert-danger', 'Failed to create user: API connection failed');
+        
+        // Check if form is still displayed
+        $this->assertSelectorExists('form');
+        $this->assertSelectorTextContains('.card-title', 'Create New User');
+        
+        // Check if form fields contain the submitted data
+        $firstNameField = $crawler->filter('input[name="user_create[firstName]"]');
+        $this->assertEquals('JAN', $firstNameField->attr('value'));
+        
+        $lastNameField = $crawler->filter('input[name="user_create[lastName]"]');
+        $this->assertEquals('KOWALSKI', $lastNameField->attr('value'));
+        
+        $birthdateField = $crawler->filter('input[name="user_create[birthdate]"]');
+        $this->assertEquals('1990-01-15', $birthdateField->attr('value'));
+    }
+    
+    public function testCreateUserWithValidationErrors(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->never())
+            ->method('create');
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        // Submit form with invalid data (empty first name)
+        $crawler = $client->request('POST', '/users/create', [
+            'user_create' => [
+                'firstName' => '', // Empty first name - should cause validation error
+                'lastName' => 'KOWALSKI',
+                'gender' => 'male',
+                'birthdate' => '1990-01-15',
+                'save' => ''
+            ]
+        ]);
+        
+        // Should render the form directly with validation errors (no redirect)
+        $this->assertResponseIsSuccessful();
+        
+        // Check if error message is displayed
+        $this->assertSelectorTextContains('.alert-danger', 'Please correct the errors below.');
+        
+        // Check if form is displayed with validation errors
+        $this->assertSelectorExists('form');
+        $this->assertSelectorTextContains('.card-title', 'Create New User');
+        
+        // Check if form fields contain the submitted data (even with errors)
+        $firstNameField = $crawler->filter('input[name="user_create[firstName]"]');
+        $this->assertEquals('', $firstNameField->attr('value')); // Empty value preserved
+        
+        $lastNameField = $crawler->filter('input[name="user_create[lastName]"]');
+        $this->assertEquals('KOWALSKI', $lastNameField->attr('value')); // Other data preserved
+        
+        $birthdateField = $crawler->filter('input[name="user_create[birthdate]"]');
+        $this->assertEquals('1990-01-15', $birthdateField->attr('value')); // Other data preserved
+        
+        $this->assertSelectorExists('input[name="user_create[firstName]"][class*="is-invalid"]', 'First name field should have is-invalid class');
+        $this->assertSelectorExists('.invalid-feedback', 'Should have validation error messages');
+        
+        // Check if validation error message is displayed for firstName field
+        $firstNameError = $crawler->filter('input[name="user_create[firstName]"]')->closest('.form-group')->filter('.invalid-feedback');
+        $this->assertGreaterThan(0, $firstNameError->count(), 'First name field should have validation error message');
+        
+        // Check if lastName field (which is valid) doesn't have error styling
+        $lastNameField = $crawler->filter('input[name="user_create[lastName]"]');
+        $this->assertStringNotContainsString('is-invalid', $lastNameField->attr('class') ?? '', 'Last name field should not have is-invalid class');
+    }
+    
 }

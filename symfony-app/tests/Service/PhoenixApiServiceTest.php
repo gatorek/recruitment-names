@@ -523,6 +523,240 @@ class PhoenixApiServiceTest extends TestCase
         });
     }
 
+    public function testCreate(): void
+    {
+        $userData = [
+            'first_name' => 'JOHN',
+            'last_name' => 'DOE',
+            'gender' => 'male',
+            'birthdate' => '1990-01-15'
+        ];
+
+        $createdUserData = [
+            'id' => 123,
+            'first_name' => 'JOHN',
+            'last_name' => 'DOE',
+            'gender' => 'male',
+            'birthdate' => '1990-01-15'
+        ];
+
+        $mockResponse = new MockResponse(json_encode([
+            'data' => $createdUserData
+        ]), [
+            'http_code' => 201,
+            'response_headers' => ['Content-Type' => 'application/json']
+        ]);
+
+        $httpClient = $this->createMockHttpClientForCreate($userData, $mockResponse);
+        $service = new PhoenixApiService($httpClient, 'localhost', 4000);
+
+        $user = new UserDTO(
+            id: 0, // Temporary ID, will be ignored by API
+            firstName: 'JOHN',
+            lastName: 'DOE',
+            gender: 'male',
+            birthdate: new \DateTime('1990-01-15')
+        );
+
+        $createdUser = $service->create($user);
+
+        $this->assertInstanceOf(UserDTO::class, $createdUser);
+        $this->assertEquals(123, $createdUser->id);
+        $this->assertEquals('JOHN', $createdUser->firstName);
+        $this->assertEquals('DOE', $createdUser->lastName);
+        $this->assertEquals('male', $createdUser->gender);
+        $this->assertEquals('1990-01-15', $createdUser->birthdate->format('Y-m-d'));
+    }
+
+    public function testCreateApiError(): void
+    {
+        $userData = [
+            'first_name' => 'JOHN',
+            'last_name' => 'DOE',
+            'gender' => 'male',
+            'birthdate' => '1990-01-15'
+        ];
+
+        $mockResponse = new MockResponse('', [
+            'http_code' => 500
+        ]);
+
+        $httpClient = $this->createMockHttpClientForCreate($userData, $mockResponse);
+        $service = new PhoenixApiService($httpClient, 'localhost', 4000);
+
+        $user = new UserDTO(
+            id: 0,
+            firstName: 'JOHN',
+            lastName: 'DOE',
+            gender: 'male',
+            birthdate: new \DateTime('1990-01-15')
+        );
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('API returned status code: 500');
+
+        $service->create($user);
+    }
+
+    public function testCreateWithValidationError(): void
+    {
+        $userData = [
+            'first_name' => 'JOHN',
+            'last_name' => 'DOE',
+            'gender' => 'male',
+            'birthdate' => '1990-01-15'
+        ];
+
+        $mockResponse = new MockResponse(json_encode([
+            'errors' => [
+                'first_name' => ['can\'t be blank']
+            ]
+        ]), [
+            'http_code' => 422,
+            'response_headers' => ['Content-Type' => 'application/json']
+        ]);
+
+        $httpClient = $this->createMockHttpClientForCreate($userData, $mockResponse);
+        $service = new PhoenixApiService($httpClient, 'localhost', 4000);
+
+        $user = new UserDTO(
+            id: 0,
+            firstName: 'JOHN',
+            lastName: 'DOE',
+            gender: 'male',
+            birthdate: new \DateTime('1990-01-15')
+        );
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('API returned status code: 422');
+
+        $service->create($user);
+    }
+
+    public function testCreateWithInvalidResponseFormat(): void
+    {
+        $userData = [
+            'first_name' => 'JOHN',
+            'last_name' => 'DOE',
+            'gender' => 'male',
+            'birthdate' => '1990-01-15'
+        ];
+
+        $mockResponse = new MockResponse(json_encode([
+            'user' => [] // Wrong key, should be 'data'
+        ]), [
+            'http_code' => 201,
+            'response_headers' => ['Content-Type' => 'application/json']
+        ]);
+
+        $httpClient = $this->createMockHttpClientForCreate($userData, $mockResponse);
+        $service = new PhoenixApiService($httpClient, 'localhost', 4000);
+
+        $user = new UserDTO(
+            id: 0,
+            firstName: 'JOHN',
+            lastName: 'DOE',
+            gender: 'male',
+            birthdate: new \DateTime('1990-01-15')
+        );
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Failed to create user - invalid response format');
+
+        $service->create($user);
+    }
+
+    public function testCreateWithEmptyResponseData(): void
+    {
+        $userData = [
+            'first_name' => 'JOHN',
+            'last_name' => 'DOE',
+            'gender' => 'male',
+            'birthdate' => '1990-01-15'
+        ];
+
+        $mockResponse = new MockResponse(json_encode([
+            'data' => []
+        ]), [
+            'http_code' => 201,
+            'response_headers' => ['Content-Type' => 'application/json']
+        ]);
+
+        $httpClient = $this->createMockHttpClientForCreate($userData, $mockResponse);
+        $service = new PhoenixApiService($httpClient, 'localhost', 4000);
+
+        $user = new UserDTO(
+            id: 0,
+            firstName: 'JOHN',
+            lastName: 'DOE',
+            gender: 'male',
+            birthdate: new \DateTime('1990-01-15')
+        );
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Failed to create user - empty response data');
+
+        $service->create($user);
+    }
+
+    public function testCreateWithWrongStatusCode(): void
+    {
+        $userData = [
+            'first_name' => 'JOHN',
+            'last_name' => 'DOE',
+            'gender' => 'male',
+            'birthdate' => '1990-01-15'
+        ];
+
+        $mockResponse = new MockResponse(json_encode([
+            'data' => [
+                'id' => 123,
+                'first_name' => 'JOHN',
+                'last_name' => 'DOE',
+                'gender' => 'male',
+                'birthdate' => '1990-01-15'
+            ]
+        ]), [
+            'http_code' => 200 // Wrong status code, should be 201
+        ]);
+
+        $httpClient = $this->createMockHttpClientForCreate($userData, $mockResponse);
+        $service = new PhoenixApiService($httpClient, 'localhost', 4000);
+
+        $user = new UserDTO(
+            id: 0,
+            firstName: 'JOHN',
+            lastName: 'DOE',
+            gender: 'male',
+            birthdate: new \DateTime('1990-01-15')
+        );
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('API returned status code: 200');
+
+        $service->create($user);
+    }
+
+    /**
+     * Create MockHttpClient for create operations with request body verification
+     */
+    private function createMockHttpClientForCreate(array $expectedUserData, MockResponse $mockResponse): MockHttpClient
+    {
+        return new MockHttpClient(function ($method, $url, $options) use ($expectedUserData, $mockResponse) {
+            // Check HTTP method
+            $this->assertEquals('POST', $method);
+            
+            // Check URL
+            $this->assertEquals('http://localhost:4000/users', $url);
+            
+            // Check request body
+            $this->assertArrayHasKey('body', $options);
+            $this->assertEquals(json_encode($expectedUserData), $options['body']);
+
+            return $mockResponse;
+        });
+    }
+
     /**
      * Create MockHttpClient without query parameters verification (for empty/no params)
      */
