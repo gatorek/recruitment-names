@@ -2,133 +2,63 @@
 
 {% block title %}User {{ user.firstName }} {{ user.lastName }}{% endblock %}
 
-{% block stylesheets %}
-    <style>
-        .user-container {
-            max-width: 600px;
-            margin: 2rem auto;
-            padding: 2rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .user-header {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid #dee2e6;
-        }
-        
-        .user-name {
-            font-size: 2rem;
-            color: #333;
-            margin-bottom: 0.5rem;
-        }
-        
-        .user-id {
-            color: #6c757d;
-            font-size: 0.9rem;
-        }
-        
-        .user-details {
-            display: grid;
-            gap: 1rem;
-        }
-        
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem;
-            background: white;
-            border-radius: 4px;
-            border-left: 4px solid #007bff;
-        }
-        
-        .detail-label {
-            font-weight: 600;
-            color: #495057;
-        }
-        
-        .detail-value {
-            color: #333;
-        }
-        
-        .gender-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-        
-        .gender-male {
-            background-color: #d1ecf1;
-            color: #0c5460;
-        }
-        
-        .gender-female {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        
-        .back-link {
-            display: inline-block;
-            margin-top: 2rem;
-            padding: 0.5rem 1rem;
-            background: #6c757d;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            transition: background-color 0.2s;
-        }
-        
-        .back-link:hover {
-            background: #5a6268;
-            color: white;
-        }
-    </style>
-{% endblock %}
-
 {% block body %}
-    <div class="user-container">
-        <div class="user-header">
-            <h1 class="user-name">{{ user.firstName }} {{ user.lastName }}</h1>
-            <div class="user-id">ID: {{ user.id }}</div>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card">
+                    <div class="card-header bg-light text-center py-4">
+                        <h1 class="card-title h2 mb-2">{{ user.firstName }} {{ user.lastName }}</h1>
+                        <small class="text-muted">ID: {{ user.id }}</small>
+                    </div>
+                    
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded user-detail-row">
+                                    <span class="fw-semibold text-muted">First Name:</span>
+                                    <span class="text-dark">{{ user.firstName }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded user-detail-row">
+                                    <span class="fw-semibold text-muted">Last Name:</span>
+                                    <span class="text-dark">{{ user.lastName }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded user-detail-row">
+                                    <span class="fw-semibold text-muted">Gender:</span>
+                                    <span class="gender-badge gender-{{ user.gender }}">
+                                        {% if user.gender == 'male' %}
+                                            Male
+                                        {% elseif user.gender == 'female' %}
+                                            Female
+                                        {% else %}
+                                            {{ user.gender }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded user-detail-row">
+                                    <span class="fw-semibold text-muted">Birth Date:</span>
+                                    <span class="text-dark">{{ user.birthdate|date('d.m.Y') }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer text-center">
+                        <a href="{{ path('home') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Home
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <div class="user-details">
-            <div class="detail-row">
-                <span class="detail-label">First Name:</span>
-                <span class="detail-value">{{ user.firstName }}</span>
-            </div>
-            
-            <div class="detail-row">
-                <span class="detail-label">Last Name:</span>
-                <span class="detail-value">{{ user.lastName }}</span>
-            </div>
-            
-            <div class="detail-row">
-                <span class="detail-label">Gender:</span>
-                <span class="detail-value">
-                    <span class="gender-badge gender-{{ user.gender }}">
-                        {% if user.gender == 'male' %}
-                            Male
-                        {% elseif user.gender == 'female' %}
-                            Female
-                        {% else %}
-                            {{ user.gender }}
-                        {% endif %}
-                    </span>
-                </span>
-            </div>
-            
-            <div class="detail-row">
-                <span class="detail-label">Birth Date:</span>
-                <span class="detail-value">{{ user.birthdate|date('d.m.Y') }}</span>
-            </div>
-        </div>
-        
-        <a href="{{ path('home') }}" class="back-link">← Back to Home</a>
     </div>
 {% endblock %}

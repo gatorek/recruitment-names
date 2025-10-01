@@ -37,20 +37,20 @@ class UserControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
         
         // Check if first and last name are displayed
-        $this->assertSelectorTextContains('.user-name', 'WIOLETTA GRABOWSKA');
+        $this->assertSelectorTextContains('.card-title', 'WIOLETTA GRABOWSKA');
         
         // Check if ID is displayed
-        $this->assertSelectorTextContains('.user-id', 'ID: 1');
+        $this->assertSelectorTextContains('small', 'ID: 1');
         
         // Check user details - each element separately
-        $this->assertSelectorTextContains('.detail-row:contains("First Name:")', 'WIOLETTA');
-        $this->assertSelectorTextContains('.detail-row:contains("Last Name:")', 'GRABOWSKA');
+        $this->assertSelectorTextContains('.user-detail-row:contains("First Name:")', 'WIOLETTA');
+        $this->assertSelectorTextContains('.user-detail-row:contains("Last Name:")', 'GRABOWSKA');
         $this->assertSelectorTextContains('.gender-badge', 'Female');
-        $this->assertSelectorTextContains('.detail-row:contains("Birth Date:")', '16.06.1992');
+        $this->assertSelectorTextContains('.user-detail-row:contains("Birth Date:")', '16.06.1992');
         
         // Check if back link exists
-        $this->assertSelectorExists('.back-link');
-        $this->assertSelectorTextContains('.back-link', 'Back to Home');
+        $this->assertSelectorExists('.btn-secondary');
+        $this->assertSelectorTextContains('.btn-secondary', 'Back to Home');
     }
     
     public function testShowUserNotFound(): void
@@ -72,11 +72,11 @@ class UserControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
         
         // Check if error page is displayed
-        $this->assertSelectorTextContains('.error-title', 'An Error Occurred');
-        $this->assertSelectorTextContains('.error-message', 'User with ID 999 not found');
+        $this->assertSelectorTextContains('.card-title', 'An Error Occurred');
+        $this->assertSelectorTextContains('.alert-danger', 'User with ID 999 not found');
         
         // Check if back link exists
-        $this->assertSelectorExists('.back-link');
+        $this->assertSelectorExists('.btn-secondary');
     }
     
     public function testShowUserWithInvalidId(): void
@@ -96,8 +96,8 @@ class UserControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
         
         // Check that error page is displayed
-        $this->assertSelectorTextContains('.error-title', 'An Error Occurred');
-        $this->assertSelectorTextContains('.error-message', 'Invalid user ID \'invalid\'. Please provide a valid positive number.');
+        $this->assertSelectorTextContains('.card-title', 'An Error Occurred');
+        $this->assertSelectorTextContains('.alert-danger', 'Invalid user ID \'invalid\'. Please provide a valid positive number.');
     }
     
     public function testShowUserWithNegativeId(): void
@@ -117,8 +117,8 @@ class UserControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
         
         // Check that error page is displayed
-        $this->assertSelectorTextContains('.error-title', 'An Error Occurred');
-        $this->assertSelectorTextContains('.error-message', 'Invalid user ID \'-1\'. Please provide a valid positive number.');
+        $this->assertSelectorTextContains('.card-title', 'An Error Occurred');
+        $this->assertSelectorTextContains('.alert-danger', 'Invalid user ID \'-1\'. Please provide a valid positive number.');
     }
     
     public function testShowUserWithZeroId(): void
@@ -138,8 +138,8 @@ class UserControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
         
         // Check that error page is displayed
-        $this->assertSelectorTextContains('.error-title', 'An Error Occurred');
-        $this->assertSelectorTextContains('.error-message', 'Invalid user ID \'0\'. Please provide a valid positive number.');
+        $this->assertSelectorTextContains('.card-title', 'An Error Occurred');
+        $this->assertSelectorTextContains('.alert-danger', 'Invalid user ID \'0\'. Please provide a valid positive number.');
     }
     
     public function testShowUserRoute(): void
@@ -197,12 +197,11 @@ class UserControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
         
         // Check HTML structure
-        $this->assertSelectorExists('.user-container');
-        $this->assertSelectorExists('.user-header');
-        $this->assertSelectorExists('.user-name');
-        $this->assertSelectorExists('.user-id');
-        $this->assertSelectorExists('.user-details');
-        $this->assertSelectorExists('.detail-row');
+        $this->assertSelectorExists('.card');
+        $this->assertSelectorExists('.card-header');
+        $this->assertSelectorExists('.card-title');
+        $this->assertSelectorExists('.card-body');
+        $this->assertSelectorExists('.user-detail-row');
         $this->assertSelectorExists('.gender-badge');
     }
     
