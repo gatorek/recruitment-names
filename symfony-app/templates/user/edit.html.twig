@@ -1,0 +1,73 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit User {{ user.firstName }} {{ user.lastName }}{% endblock %}
+
+{% block body %}
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card">
+                    <div class="card-header bg-light text-center py-4">
+                        <h1 class="card-title h2 mb-2">Edit User</h1>
+                        <small class="text-muted">{{ user.firstName }} {{ user.lastName }} (ID: {{ user.id }})</small>
+                    </div>
+                    
+                    <div class="card-body p-4">
+                        {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
+                        
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    {{ form_label(form.firstName, null, {'label_attr': {'class': 'form-label fw-semibold'}}) }}
+                                    {{ form_widget(form.firstName) }}
+                                    {{ form_errors(form.firstName) }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-group">
+                                    {{ form_label(form.lastName, null, {'label_attr': {'class': 'form-label fw-semibold'}}) }}
+                                    {{ form_widget(form.lastName) }}
+                                    {{ form_errors(form.lastName) }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-group">
+                                    {{ form_label(form.gender, null, {'label_attr': {'class': 'form-label fw-semibold'}}) }}
+                                    {{ form_widget(form.gender) }}
+                                    {{ form_errors(form.gender) }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-group">
+                                    {{ form_label(form.birthdate, null, {'label_attr': {'class': 'form-label fw-semibold'}}) }}
+                                    {{ form_widget(form.birthdate) }}
+                                    {{ form_errors(form.birthdate) }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-12 text-center">
+                                {{ form_widget(form.save) }}
+                            </div>
+                        </div>
+                        
+                        {{ form_end(form) }}
+                    </div>
+                    
+                    <div class="card-footer text-center">
+                        <a href="{{ path('user_show', {'id': user.id}) }}" class="btn btn-secondary me-2">
+                            <i class="bi bi-arrow-left"></i> Back to User Details
+                        </a>
+                        <a href="{{ path('user_list') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-list"></i> Back to User List
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

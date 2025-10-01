@@ -68,15 +68,8 @@ class UserControllerTest extends WebTestCase
         
         $client->request('GET', '/users/999');
         
-        $this->assertResponseIsSuccessful();
-        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        
-        // Check if error page is displayed
-        $this->assertSelectorTextContains('.card-title', 'An Error Occurred');
-        $this->assertSelectorTextContains('.alert-danger', 'User with ID 999 not found');
-        
-        // Check if back link exists
-        $this->assertSelectorExists('.btn-secondary');
+        // Should redirect to user list
+        $this->assertResponseRedirects('/users');
     }
     
     public function testShowUserWithInvalidId(): void
@@ -92,12 +85,8 @@ class UserControllerTest extends WebTestCase
         // Test with invalid ID (non-numeric)
         $client->request('GET', '/users/invalid');
         
-        $this->assertResponseIsSuccessful();
-        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        
-        // Check that error page is displayed
-        $this->assertSelectorTextContains('.card-title', 'An Error Occurred');
-        $this->assertSelectorTextContains('.alert-danger', 'Invalid user ID \'invalid\'. Please provide a valid positive number.');
+        // Should redirect to user list
+        $this->assertResponseRedirects('/users');
     }
     
     public function testShowUserWithNegativeId(): void
@@ -113,12 +102,8 @@ class UserControllerTest extends WebTestCase
         // Test with negative ID
         $client->request('GET', '/users/-1');
         
-        $this->assertResponseIsSuccessful();
-        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        
-        // Check that error page is displayed
-        $this->assertSelectorTextContains('.card-title', 'An Error Occurred');
-        $this->assertSelectorTextContains('.alert-danger', 'Invalid user ID \'-1\'. Please provide a valid positive number.');
+        // Should redirect to user list
+        $this->assertResponseRedirects('/users');
     }
     
     public function testShowUserWithZeroId(): void
@@ -134,12 +119,8 @@ class UserControllerTest extends WebTestCase
         // Test with zero ID
         $client->request('GET', '/users/0');
         
-        $this->assertResponseIsSuccessful();
-        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        
-        // Check that error page is displayed
-        $this->assertSelectorTextContains('.card-title', 'An Error Occurred');
-        $this->assertSelectorTextContains('.alert-danger', 'Invalid user ID \'0\'. Please provide a valid positive number.');
+        // Should redirect to user list
+        $this->assertResponseRedirects('/users');
     }
     
     public function testShowUserRoute(): void
@@ -235,6 +216,136 @@ class UserControllerTest extends WebTestCase
         $this->assertSelectorExists('.gender-male');
     }
     
+    public function testEditUserSuccess(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService
+        $mockUser = new UserDTO(
+            id: 1,
+            firstName: 'WIOLETTA',
+            lastName: 'GRABOWSKA',
+            gender: 'female',
+            birthdate: new \DateTime('1992-06-16')
+        );
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('getUser')
+            ->with(1)
+            ->willReturn($mockUser);
+        
+        // Set mock in container
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users/1/edit');
+        
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        
+        // Check if edit page title is displayed
+        $this->assertSelectorTextContains('.card-title', 'Edit User');
+        
+        // Check if user info is displayed in header
+        $this->assertSelectorTextContains('small', 'WIOLETTA GRABOWSKA (ID: 1)');
+        
+        // Check if form is present
+        $this->assertSelectorExists('form');
+        $this->assertSelectorExists('form.needs-validation');
+        
+        // Check if form fields are pre-filled with user data
+        $firstNameField = $crawler->filter('input[name="user_edit[firstName]"]');
+        $this->assertEquals('WIOLETTA', $firstNameField->attr('value'));
+        
+        $lastNameField = $crawler->filter('input[name="user_edit[lastName]"]');
+        $this->assertEquals('GRABOWSKA', $lastNameField->attr('value'));
+        
+        $birthdateField = $crawler->filter('input[name="user_edit[birthdate]"]');
+        $this->assertEquals('1992-06-16', $birthdateField->attr('value'));
+        
+        // Check if gender dropdown has correct value selected
+        $genderSelect = $crawler->filter('select[name="user_edit[gender]"]');
+        $this->assertCount(1, $genderSelect->filter('option[value="female"][selected]'));
+        
+        // Check if submit button has correct text
+        $this->assertSelectorTextContains('button[name="user_edit[save]"]', 'Update User');
+        
+        // Check if navigation links are present
+        $this->assertSelectorExists('a[href="/users/1"]');
+        $this->assertSelectorTextContains('a[href="/users/1"]', 'Back to User Details');
+        $this->assertSelectorExists('a[href="/users"]');
+        $this->assertSelectorTextContains('a[href="/users"]', 'Back to User List');
+    }
+    
+    public function testEditUserNotFound(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with error
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('getUser')
+            ->with(999)
+            ->willThrowException(new \Exception('User with ID 999 not found'));
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $client->request('GET', '/users/999/edit');
+        
+        // Should redirect to user list
+        $this->assertResponseRedirects('/users');
+    }
+    
+    public function testEditUserWithInvalidId(): void
+    {
+        // Mock PhoenixApiService to ensure getUser is never called for invalid ID
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->never())
+            ->method('getUser');
+        
+        $client = static::createClient();
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        // Test with invalid ID (non-numeric)
+        $client->request('GET', '/users/invalid/edit');
+        
+        // Should redirect to user list
+        $this->assertResponseRedirects('/users');
+    }
+    
+    public function testEditUserRoute(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService
+        $mockUser = new UserDTO(
+            id: 1,
+            firstName: 'TEST',
+            lastName: 'USER',
+            gender: 'male',
+            birthdate: new \DateTime('1990-01-01')
+        );
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('getUser')
+            ->with(1)
+            ->willReturn($mockUser);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users/1/edit');
+        
+        $this->assertResponseIsSuccessful();
+        
+        // Check if the route is accessible
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        
+        // Check if edit form is displayed
+        $this->assertSelectorExists('form');
+        $this->assertSelectorTextContains('.card-title', 'Edit User');
+    }
+
     public function testListUsersSuccess(): void
     {
         $client = static::createClient();

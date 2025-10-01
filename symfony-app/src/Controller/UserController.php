@@ -3,8 +3,10 @@
 namespace App\Controller;
 
 use App\Exception\InvalidUserIdException;
+use App\Form\UserEditType;
 use App\Service\PhoenixApiService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -28,15 +30,34 @@ class UserController extends AbstractController
             ]);
             
         } catch (InvalidUserIdException $e) {
-            return $this->render('user/error.html.twig', [
-                'error' => $e->getMessage()
-            ]);
+            $this->addFlash('error', $e->getMessage());
+            return $this->redirectToRoute('user_list');
         } catch (\Exception $e) {
             $this->addFlash('error', 'Failed to fetch user data: ' . $e->getMessage());
+            return $this->redirectToRoute('user_list');
+        }
+    }
+
+    #[Route('/users/{id}/edit', name: 'user_edit', methods: ['GET'])]
+    public function edit(string $id): Response
+    {
+        try {
+            $userId = $this->validateAndParseUserId($id);
+            $user = $this->phoenixApiService->getUser($userId);
             
-            return $this->render('user/error.html.twig', [
-                'error' => $e->getMessage()
+            $form = $this->createForm(UserEditType::class, $user);
+            
+            return $this->render('user/edit.html.twig', [
+                'user' => $user,
+                'form' => $form->createView()
             ]);
+            
+        } catch (InvalidUserIdException $e) {
+            $this->addFlash('error', $e->getMessage());
+            return $this->redirectToRoute('user_list');
+        } catch (\Exception $e) {
+            $this->addFlash('error', 'Failed to fetch user data: ' . $e->getMessage());
+            return $this->redirectToRoute('user_list');
         }
     }
 
