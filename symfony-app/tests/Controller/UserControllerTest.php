@@ -1197,4 +1197,98 @@ class UserControllerTest extends WebTestCase
         $this->assertStringNotContainsString('is-invalid', $firstNameField->attr('class') ?? '', 'First name field should not have is-invalid class');
     }
     
+    public function testUpdateUserSuccess(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService
+        $updatedUser = new UserDTO(
+            id: 1,
+            firstName: 'JAN',
+            lastName: 'KOWALSKI',
+            gender: 'male',
+            birthdate: new \DateTime('1990-01-15')
+        );
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('update')
+            ->with($this->callback(function (UserDTO $userDTO) {
+                return $userDTO->id === 1
+                    && $userDTO->firstName === 'JAN'
+                    && $userDTO->lastName === 'KOWALSKI'
+                    && $userDTO->gender === 'male'
+                    && $userDTO->birthdate->format('Y-m-d') === '1990-01-15';
+            }))
+            ->willReturn($updatedUser);
+        
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        // Submit form with valid data
+        $client->request('POST', '/users/1/edit', [
+            'user_edit' => [
+                'firstName' => 'JAN',
+                'lastName' => 'KOWALSKI',
+                'gender' => 'male',
+                'birthdate' => '1990-01-15',
+                'save' => ''
+            ]
+        ]);
+        
+        // Should redirect to user show page
+        $this->assertResponseRedirects('/users/1');
+    }
+    
+    public function testUpdateUserApiError(): void
+    {        
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService to throw an exception
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('update')
+            ->with($this->callback(function (UserDTO $userDTO) {
+                return $userDTO->id === 1
+                    && $userDTO->firstName === 'JAN'
+                    && $userDTO->lastName === 'KOWALSKI'
+                    && $userDTO->gender === 'male'
+                    && $userDTO->birthdate->format('Y-m-d') === '1990-01-15';
+            }))
+            ->willThrowException(new \Exception('API connection failed'));
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        // Submit form with valid data
+        $crawler = $client->request('POST', '/users/1/edit', [
+            'user_edit' => [
+                'firstName' => 'JAN',
+                'lastName' => 'KOWALSKI',
+                'gender' => 'male',
+                'birthdate' => '1990-01-15',
+                'save' => ''
+            ]
+        ]);
+        
+        // Should render the form with error (no redirect)
+        $this->assertResponseIsSuccessful();
+        
+        // Check if error message is displayed
+        $this->assertSelectorTextContains('.alert-danger', 'Failed to update user: API connection failed');
+        
+        // Check if form is still displayed
+        $this->assertSelectorExists('form');
+        $this->assertSelectorTextContains('.card-title', 'Edit User');
+        
+        // Check if form fields contain the submitted data
+        $firstNameField = $crawler->filter('input[name="user_edit[firstName]"]');
+        $this->assertEquals('JAN', $firstNameField->attr('value'));
+        
+        $lastNameField = $crawler->filter('input[name="user_edit[lastName]"]');
+        $this->assertEquals('KOWALSKI', $lastNameField->attr('value'));
+        
+        $birthdateField = $crawler->filter('input[name="user_edit[birthdate]"]');
+        $this->assertEquals('1990-01-15', $birthdateField->attr('value'));
+    }
+    
 }

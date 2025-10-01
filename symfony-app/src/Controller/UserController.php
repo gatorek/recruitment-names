@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\DTO\UserDTO;
 use App\Exception\InvalidUserIdException;
 use App\Form\UserEditType;
 use App\Service\PhoenixApiService;
@@ -91,8 +92,26 @@ class UserController extends AbstractController
             
             
             if ($form->isSubmitted() && $form->isValid()) {
-                $this->addFlash('success', 'User would be saved');
-                return $this->redirectToRoute('user_show', ['id' => $userId]);
+                try {
+                    // Create UserDTO from form data
+                    $userDTO = new UserDTO(
+                        id: $userId,
+                        firstName: $form->get('firstName')->getData(),
+                        lastName: $form->get('lastName')->getData(),
+                        gender: $form->get('gender')->getData(),
+                        birthdate: $form->get('birthdate')->getData()
+                    );
+                    
+                    // Call Phoenix API to update user
+                    $this->phoenixApiService->update($userDTO);
+                    
+                    $this->addFlash('success', 'User has been updated successfully');
+                    return $this->redirectToRoute('user_show', ['id' => $userId]);
+                    
+                } catch (\Exception $e) {
+                    $this->addFlash('error', 'Failed to update user: ' . $e->getMessage());
+                    // Continue to render the form with error
+                }
             }
             
             // Check if form has validation errors
