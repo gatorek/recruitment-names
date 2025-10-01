@@ -59,11 +59,11 @@
                     </div>
                     
                     <div class="card-footer text-center">
-                        <a href="{{ path('user_show', {'id': user.id}) }}" class="btn btn-secondary me-2">
-                            <i class="bi bi-arrow-left"></i> Back to User Details
+                        <a href="{{ path('user_list') }}" class="btn btn-outline-secondary me-2">
+                            <i class="bi bi-list"></i> User List
                         </a>
-                        <a href="{{ path('user_list') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-list"></i> Back to User List
+                        <a href="{{ path('user_show', {'id': user.id}) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-eye"></i> View Details
                         </a>
                     </div>
                 </div>

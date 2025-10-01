@@ -48,9 +48,11 @@ class UserControllerTest extends WebTestCase
         $this->assertSelectorTextContains('.gender-badge', 'Female');
         $this->assertSelectorTextContains('.user-detail-row:contains("Birth Date:")', '16.06.1992');
         
-        // Check if back link exists
-        $this->assertSelectorExists('.btn-secondary');
-        $this->assertSelectorTextContains('.btn-secondary', 'Back to Home');
+        // Check if navigation links exist
+        $this->assertSelectorExists('a[href="/users"]');
+        $this->assertSelectorTextContains('a[href="/users"]', 'User List');
+        $this->assertSelectorExists('a[href="/users/1/edit"]');
+        $this->assertSelectorTextContains('a[href="/users/1/edit"]', 'Edit User');
     }
     
     public function testShowUserNotFound(): void
@@ -271,10 +273,10 @@ class UserControllerTest extends WebTestCase
         $this->assertSelectorTextContains('button[name="user_edit[save]"]', 'Update User');
         
         // Check if navigation links are present
-        $this->assertSelectorExists('a[href="/users/1"]');
-        $this->assertSelectorTextContains('a[href="/users/1"]', 'Back to User Details');
         $this->assertSelectorExists('a[href="/users"]');
-        $this->assertSelectorTextContains('a[href="/users"]', 'Back to User List');
+        $this->assertSelectorTextContains('a[href="/users"]', 'User List');
+        $this->assertSelectorExists('a[href="/users/1"]');
+        $this->assertSelectorTextContains('a[href="/users/1"]', 'View Details');
     }
     
     public function testEditUserNotFound(): void
