@@ -10,21 +10,33 @@ use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Constraints\Length;
 
 class UserEditType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('firstName', TextType::class, [
-                'label' => 'First Name',
-                'attr' => [
-                    'class' => 'form-control',
-                    'placeholder' => 'Enter first name'
-                ]
-            ])
+                ->add('firstName', TextType::class, [
+                    'label' => 'First Name',
+                    'mapped' => false,
+                    'constraints' => [
+                        new NotBlank(['message' => 'First name cannot be blank']),
+                        new Length(['min' => 1, 'max' => 100])
+                    ],
+                    'attr' => [
+                        'class' => 'form-control',
+                        'placeholder' => 'Enter first name'
+                    ]
+                ])
             ->add('lastName', TextType::class, [
                 'label' => 'Last Name',
+                'mapped' => false,
+                'constraints' => [
+                    new NotBlank(['message' => 'Last name cannot be blank']),
+                    new Length(['min' => 1, 'max' => 100])
+                ],
                 'attr' => [
                     'class' => 'form-control',
                     'placeholder' => 'Enter last name'
@@ -32,6 +44,7 @@ class UserEditType extends AbstractType
             ])
             ->add('gender', ChoiceType::class, [
                 'label' => 'Gender',
+                'mapped' => false,
                 'choices' => [
                     'Male' => 'male',
                     'Female' => 'female'
@@ -42,6 +55,7 @@ class UserEditType extends AbstractType
             ])
             ->add('birthdate', DateType::class, [
                 'label' => 'Birth Date',
+                'mapped' => false,
                 'widget' => 'single_text',
                 'attr' => [
                     'class' => 'form-control'
@@ -58,7 +72,7 @@ class UserEditType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'data_class' => UserDTO::class,
+            'data_class' => null,
         ]);
     }
 }

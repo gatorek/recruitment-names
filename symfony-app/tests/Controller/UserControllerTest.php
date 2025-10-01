@@ -1064,4 +1064,137 @@ class UserControllerTest extends WebTestCase
         $this->assertSelectorExists('table');
     }
     
+    public function testUpdateUserWithValidationErrors(): void
+    {
+        // Set environment variables for tests
+        $_ENV['PHX_HOST'] = 'localhost';
+        $_ENV['PORT'] = '4000';
+        
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService
+        $mockUser = new UserDTO(
+            id: 1,
+            firstName: 'WIOLETTA',
+            lastName: 'GRABOWSKA',
+            gender: 'female',
+            birthdate: new \DateTime('1992-06-16')
+        );
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->never())
+            ->method('getUser');
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        // Submit form with invalid data (empty first name)
+        $crawler = $client->request('POST', '/users/1/edit', [
+            'user_edit' => [
+                'firstName' => '', // Empty first name - should cause validation error
+                'lastName' => 'GRABOWSKA',
+                'gender' => 'female',
+                'birthdate' => '1992-06-16',
+                'save' => ''
+            ]
+        ]);
+        
+        // Should render the form directly with validation errors (no redirect)
+        $this->assertResponseIsSuccessful();
+        
+        // Check if error message is displayed
+        $this->assertSelectorTextContains('.alert-danger', 'Please correct the errors below.');
+        
+        // Check if form is displayed with validation errors
+        $this->assertSelectorExists('form');
+        $this->assertSelectorTextContains('.card-title', 'Edit User');
+        
+        // Check if form fields contain the submitted data (even with errors)
+        $firstNameField = $crawler->filter('input[name="user_edit[firstName]"]');
+        $this->assertEquals('', $firstNameField->attr('value')); // Empty value preserved
+        
+        $lastNameField = $crawler->filter('input[name="user_edit[lastName]"]');
+        $this->assertEquals('GRABOWSKA', $lastNameField->attr('value')); // Other data preserved
+        
+        $birthdateField = $crawler->filter('input[name="user_edit[birthdate]"]');
+        $this->assertEquals('1992-06-16', $birthdateField->attr('value')); // Other data preserved
+        
+        $this->assertSelectorExists('input[name="user_edit[firstName]"][class*="is-invalid"]', 'First name field should have is-invalid class');
+        $this->assertSelectorExists('.invalid-feedback', 'Should have validation error messages');
+        
+        // Check if validation error message is displayed for firstName field
+        $firstNameError = $crawler->filter('input[name="user_edit[firstName]"]')->closest('.form-group')->filter('.invalid-feedback');
+        $this->assertGreaterThan(0, $firstNameError->count(), 'First name field should have validation error message');
+        
+        // Check if lastName field (which is valid) doesn't have error styling
+        $lastNameField = $crawler->filter('input[name="user_edit[lastName]"]');
+        $this->assertStringNotContainsString('is-invalid', $lastNameField->attr('class') ?? '', 'Last name field should not have is-invalid class');
+    }
+    
+    public function testUpdateUserWithLastNameValidationError(): void
+    {
+        // Set environment variables for tests
+        $_ENV['PHX_HOST'] = 'localhost';
+        $_ENV['PORT'] = '4000';
+
+        $client = static::createClient();
+
+        // Mock PhoenixApiService
+        $mockUser = new UserDTO(
+            id: 1,
+            firstName: 'WIOLETTA',
+            lastName: 'GRABOWSKA',
+            gender: 'female',
+            birthdate: new \DateTime('1992-06-16')
+        );
+
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->never())
+            ->method('getUser');
+
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+
+        // Submit form with invalid data (empty last name)
+        $crawler = $client->request('POST', '/users/1/edit', [
+            'user_edit' => [
+                'firstName' => 'WIOLETTA',
+                'lastName' => '', // Empty last name - should cause validation error
+                'gender' => 'female',
+                'birthdate' => '1992-06-16',
+                'save' => ''
+            ]
+        ]);
+
+        // Should render the form directly with validation errors (no redirect)
+        $this->assertResponseIsSuccessful();
+        
+        // Check if error message is displayed
+        $this->assertSelectorTextContains('.alert-danger', 'Please correct the errors below.');
+        
+        // Check if form is displayed with validation errors
+        $this->assertSelectorExists('form');
+        $this->assertSelectorTextContains('.card-title', 'Edit User');
+        
+        // Check if form fields contain the submitted data (even with errors)
+        $firstNameField = $crawler->filter('input[name="user_edit[firstName]"]');
+        $this->assertEquals('WIOLETTA', $firstNameField->attr('value')); // Valid data preserved
+        
+        $lastNameField = $crawler->filter('input[name="user_edit[lastName]"]');
+        $this->assertEquals('', $lastNameField->attr('value')); // Empty value preserved
+        
+        $birthdateField = $crawler->filter('input[name="user_edit[birthdate]"]');
+        $this->assertEquals('1992-06-16', $birthdateField->attr('value')); // Other data preserved
+        
+        // Check if fields with validation errors are properly marked
+        $this->assertSelectorExists('input[name="user_edit[lastName]"][class*="is-invalid"]', 'Last name field should have is-invalid class');
+        $this->assertSelectorExists('.invalid-feedback', 'Should have validation error messages');
+        
+        // Check if validation error message is displayed for lastName field
+        $lastNameError = $crawler->filter('input[name="user_edit[lastName]"]')->closest('.form-group')->filter('.invalid-feedback');
+        $this->assertGreaterThan(0, $lastNameError->count(), 'Last name field should have validation error message');
+        
+        // Check if firstName field (which is valid) doesn't have error styling
+        $firstNameField = $crawler->filter('input[name="user_edit[firstName]"]');
+        $this->assertStringNotContainsString('is-invalid', $firstNameField->attr('class') ?? '', 'First name field should not have is-invalid class');
+    }
+    
 }

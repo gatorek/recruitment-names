@@ -39,16 +39,70 @@ class UserController extends AbstractController
     }
 
     #[Route('/users/{id}/edit', name: 'user_edit', methods: ['GET'])]
-    public function edit(string $id): Response
+    public function edit(string $id, Request $request): Response
     {
         try {
             $userId = $this->validateAndParseUserId($id);
+            
+            // Always fetch fresh user data from API
             $user = $this->phoenixApiService->getUser($userId);
             
             $form = $this->createForm(UserEditType::class, $user);
             
+            // Set default values for unmapped fields with fresh data from API
+            $form->get('firstName')->setData($user->firstName);
+            $form->get('lastName')->setData($user->lastName);
+            $form->get('gender')->setData($user->gender);
+            $form->get('birthdate')->setData($user->birthdate);
+            
             return $this->render('user/edit.html.twig', [
                 'user' => $user,
+                'form' => $form->createView()
+            ]);
+            
+        } catch (InvalidUserIdException $e) {
+            $this->addFlash('error', $e->getMessage());
+            return $this->redirectToRoute('user_list');
+        } catch (\Exception $e) {
+            $this->addFlash('error', 'Failed to fetch user data: ' . $e->getMessage());
+            return $this->redirectToRoute('user_list');
+        }
+    }
+
+    #[Route('/users/{id}/edit', name: 'user_update', methods: ['POST'])]
+    public function update(string $id, Request $request): Response
+    {
+        try {
+            $userId = $this->validateAndParseUserId($id);
+            
+            // Create form without binding to user data
+            // We'll use the data submitted by the user
+            $form = $this->createForm(UserEditType::class);
+            $form->handleRequest($request);
+            
+            // Get user data from form for display purposes
+            $userData = [
+                'id' => $userId,
+                'firstName' => $form->get('firstName')->getData(),
+                'lastName' => $form->get('lastName')->getData(),
+                'gender' => $form->get('gender')->getData(),
+                'birthdate' => $form->get('birthdate')->getData()
+            ];
+            
+            
+            if ($form->isSubmitted() && $form->isValid()) {
+                $this->addFlash('success', 'User would be saved');
+                return $this->redirectToRoute('user_show', ['id' => $userId]);
+            }
+            
+            // Check if form has validation errors
+            if ($form->isSubmitted() && !$form->isValid()) {
+                $this->addFlash('error', 'Please correct the errors below.');
+            }
+            
+            // Always render the form with current data and validation errors
+            return $this->render('user/edit.html.twig', [
+                'user' => $userData,
                 'form' => $form->createView()
             ]);
             
