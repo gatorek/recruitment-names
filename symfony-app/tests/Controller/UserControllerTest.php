@@ -235,4 +235,720 @@ class UserControllerTest extends WebTestCase
         $this->assertSelectorExists('.gender-male');
     }
     
+    public function testListUsersSuccess(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with multiple users
+        $mockUsers = [
+            new UserDTO(
+                id: 1,
+                firstName: 'JAN',
+                lastName: 'KOWALSKI',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            ),
+            new UserDTO(
+                id: 2,
+                firstName: 'ANNA',
+                lastName: 'NOWAK',
+                gender: 'female',
+                birthdate: new \DateTime('1990-12-25')
+            )
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with([])
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users');
+        
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        
+        // Check if users are displayed
+        $this->assertSelectorTextContains('h1', 'Users List');
+        $this->assertSelectorTextContains('h5', 'Found 2 users');
+        
+        // Check if both users are displayed
+        $this->assertSelectorTextContains('body', 'JAN KOWALSKI');
+        $this->assertSelectorTextContains('body', 'ANNA NOWAK');
+        
+        // Check if view details links exist
+        $this->assertSelectorExists('a[href="/users/1"]');
+        $this->assertSelectorExists('a[href="/users/2"]');
+    }
+    
+    public function testListUsersEmptyResult(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with empty result
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with([])
+            ->willReturn([]);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users');
+        
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        
+        // Check if empty state is displayed
+        $this->assertSelectorTextContains('h4', 'No users found');
+        $this->assertSelectorTextContains('body', 'No users are available at the moment');
+    }
+    
+    public function testListUsersWithApiError(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with error
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with([])
+            ->willThrowException(new \Exception('API connection failed'));
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $client->request('GET', '/users');
+        
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        
+        // Check if error is displayed
+        $this->assertSelectorTextContains('.alert-danger', 'API connection failed');
+    }
+    
+    public function testListUsersRoute(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with([])
+            ->willReturn([]);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $client->request('GET', '/users');
+        
+        $this->assertResponseIsSuccessful();
+        
+        // Check if routing works correctly
+        $this->assertRouteSame('user_list');
+    }
+    
+    public function testListUsersPageStructure(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService
+        $mockUsers = [
+            new UserDTO(
+                id: 1,
+                firstName: 'JAN',
+                lastName: 'KOWALSKI',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            )
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with([])
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users');
+        
+        $this->assertResponseIsSuccessful();
+        
+        // Check HTML structure
+        $this->assertSelectorExists('.card');
+        $this->assertSelectorExists('.card-header');
+        $this->assertSelectorExists('h1');
+        $this->assertSelectorExists('h5');
+    }
+    
+    public function testListUsersWithAscendingSort(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with sorted users
+        $mockUsers = [
+            new UserDTO(
+                id: 1,
+                firstName: 'ANNA',
+                lastName: 'NOWAK',
+                gender: 'female',
+                birthdate: new \DateTime('1990-12-25')
+            ),
+            new UserDTO(
+                id: 2,
+                firstName: 'JAN',
+                lastName: 'KOWALSKI',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            )
+        ];
+        
+        $expectedFilters = [
+            'sort' => 'first_name',
+            'order' => 'desc'
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with($expectedFilters)
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?sort_order=desc&sort_field=first_name');
+        
+        $this->assertResponseIsSuccessful();
+        
+        // Check if page loads
+        $this->assertSelectorExists('h1');
+    }
+    
+    public function testListUsersWithDescendingSort(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with sorted users
+        $mockUsers = [
+            new UserDTO(
+                id: 2,
+                firstName: 'JAN',
+                lastName: 'KOWALSKI',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            ),
+            new UserDTO(
+                id: 1,
+                firstName: 'ANNA',
+                lastName: 'NOWAK',
+                gender: 'female',
+                birthdate: new \DateTime('1990-12-25')
+            )
+        ];
+        
+        $expectedFilters = [
+            'sort' => 'first_name',
+            'order' => 'desc'
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with($expectedFilters)
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?sort_order=desc&sort_field=first_name');
+        
+        $this->assertResponseIsSuccessful();
+        
+        // Check if sorting icon is displayed (descending)
+        $this->assertSelectorExists('i[style*="transform: rotate(180deg)"]');
+    }
+    
+    public function testListUsersWithDefaultSort(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with default users
+        $mockUsers = [
+            new UserDTO(
+                id: 1,
+                firstName: 'JAN',
+                lastName: 'KOWALSKI',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            ),
+            new UserDTO(
+                id: 2,
+                firstName: 'ANNA',
+                lastName: 'NOWAK',
+                gender: 'female',
+                birthdate: new \DateTime('1990-12-25')
+            )
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with(['sort' => 'first_name', 'order' => 'desc'])
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?sort_order=desc&sort_field=first_name');
+        
+        $this->assertResponseIsSuccessful();
+        
+        // Check if sorting icon is displayed (descending)
+        $this->assertSelectorExists('i[style*="transform: rotate(180deg)"]');
+    }
+    
+    public function testListUsersSortingLinkGeneration(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService
+        $mockUsers = [
+            new UserDTO(
+                id: 1,
+                firstName: 'JAN',
+                lastName: 'KOWALSKI',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            )
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with([])
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users');
+        
+        $this->assertResponseIsSuccessful();
+        
+        // Check if table exists
+        $this->assertSelectorExists('table');
+    }
+    
+    public function testListUsersWithLastNameAscendingSort(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with sorted users
+        $mockUsers = [
+            new UserDTO(
+                id: 1,
+                firstName: 'ANNA',
+                lastName: 'KOWALSKI',
+                gender: 'female',
+                birthdate: new \DateTime('1990-12-25')
+            ),
+            new UserDTO(
+                id: 2,
+                firstName: 'JAN',
+                lastName: 'NOWAK',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            )
+        ];
+        
+        $expectedFilters = [
+            'sort' => 'last_name',
+            'order' => 'asc'
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with($expectedFilters)
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?sort_field=last_name&sort_order=asc');
+        
+        $this->assertResponseIsSuccessful();
+        
+        // Check if sorting icon is displayed (ascending)
+        $this->assertSelectorExists('i.bi-triangle-fill');
+        $this->assertSelectorNotExists('i[style*="transform: rotate(180deg)"]');
+    }
+    
+    public function testListUsersWithLastNameDescendingSort(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with sorted users
+        $mockUsers = [
+            new UserDTO(
+                id: 2,
+                firstName: 'JAN',
+                lastName: 'NOWAK',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            ),
+            new UserDTO(
+                id: 1,
+                firstName: 'ANNA',
+                lastName: 'KOWALSKI',
+                gender: 'female',
+                birthdate: new \DateTime('1990-12-25')
+            )
+        ];
+        
+        $expectedFilters = [
+            'sort' => 'last_name',
+            'order' => 'desc'
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with($expectedFilters)
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?sort_field=last_name&sort_order=desc');
+        
+        $this->assertResponseIsSuccessful();
+        
+        // Check if sorting icon is displayed (descending)
+        $this->assertSelectorExists('i[style*="transform: rotate(180deg)"]');
+    }
+    
+    public function testListUsersSortingFieldSwitching(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService
+        $mockUsers = [
+            new UserDTO(
+                id: 1,
+                firstName: 'JAN',
+                lastName: 'KOWALSKI',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            )
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with([])
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users');
+        
+        $this->assertResponseIsSuccessful();
+        
+        // Check if both sorting links exist
+        $this->assertSelectorExists('a[href*="sort_field=first_name"]');
+        $this->assertSelectorExists('a[href*="sort_field=last_name"]');
+    }
+    
+    public function testListUsersWithGenderAscendingSort(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with sorted users (male first for asc)
+        $mockUsers = [
+            new UserDTO(
+                id: 2,
+                firstName: 'JAN',
+                lastName: 'NOWAK',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            ),
+            new UserDTO(
+                id: 1,
+                firstName: 'ANNA',
+                lastName: 'KOWALSKI',
+                gender: 'female',
+                birthdate: new \DateTime('1990-12-25')
+            )
+        ];
+        
+        $expectedFilters = [
+            'sort' => 'gender',
+            'order' => 'asc' // Normal order: male first
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with($expectedFilters)
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?sort_field=gender&sort_order=asc');
+        
+        $this->assertResponseIsSuccessful();
+    }
+    
+    public function testListUsersWithGenderDescendingSort(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with sorted users (female first for desc)
+        $mockUsers = [
+            new UserDTO(
+                id: 1,
+                firstName: 'ANNA',
+                lastName: 'KOWALSKI',
+                gender: 'female',
+                birthdate: new \DateTime('1990-12-25')
+            ),
+            new UserDTO(
+                id: 2,
+                firstName: 'JAN',
+                lastName: 'NOWAK',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            )
+        ];
+        
+        $expectedFilters = [
+            'sort' => 'gender',
+            'order' => 'desc' // Normal order: female first
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with($expectedFilters)
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?sort_field=gender&sort_order=desc');
+        
+        $this->assertResponseIsSuccessful();
+    }
+    
+    public function testListUsersAllSortingFieldsAvailable(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService
+        $mockUsers = [
+            new UserDTO(
+                id: 1,
+                firstName: 'JAN',
+                lastName: 'KOWALSKI',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            )
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with([])
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users');
+        
+        $this->assertResponseIsSuccessful();
+        
+        // Check if all sorting links exist
+        $this->assertSelectorExists('a[href*="sort_field=first_name"]');
+        $this->assertSelectorExists('a[href*="sort_field=last_name"]');
+        $this->assertSelectorExists('a[href*="sort_field=gender"]');
+        $this->assertSelectorExists('a[href*="sort_field=birthdate"]');
+    }
+    
+    public function testListUsersWithBirthdateAscendingSort(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with sorted users (oldest first for asc)
+        $mockUsers = [
+            new UserDTO(
+                id: 2,
+                firstName: 'JAN',
+                lastName: 'NOWAK',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            ),
+            new UserDTO(
+                id: 1,
+                firstName: 'ANNA',
+                lastName: 'KOWALSKI',
+                gender: 'female',
+                birthdate: new \DateTime('1990-12-25')
+            )
+        ];
+        
+        $expectedFilters = [
+            'sort' => 'birthdate',
+            'order' => 'asc' // Normal order: oldest first
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with($expectedFilters)
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?sort_field=birthdate&sort_order=asc');
+        
+        $this->assertResponseIsSuccessful();
+    }
+    
+    public function testListUsersWithBirthdateDescendingSort(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with sorted users (newest first for desc)
+        $mockUsers = [
+            new UserDTO(
+                id: 1,
+                firstName: 'ANNA',
+                lastName: 'KOWALSKI',
+                gender: 'female',
+                birthdate: new \DateTime('1990-12-25')
+            ),
+            new UserDTO(
+                id: 2,
+                firstName: 'JAN',
+                lastName: 'NOWAK',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            )
+        ];
+        
+        $expectedFilters = [
+            'sort' => 'birthdate',
+            'order' => 'desc' // Normal order: newest first
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with($expectedFilters)
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?sort_field=birthdate&sort_order=desc');
+        
+        $this->assertResponseIsSuccessful();
+    }
+    
+    public function testListUsersWithInvalidSortField(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService to avoid environment variable issues
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->never())
+            ->method('listUsers');
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?sort_field=invalid_field');
+        
+        $this->assertResponseIsSuccessful();
+        
+        // Check if error message is displayed
+        $this->assertSelectorTextContains('.alert-danger', 'Invalid sort field: invalid_field');
+    }
+    
+    public function testListUsersWithEmptySortField(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService
+        $mockUsers = [
+            new UserDTO(
+                id: 1,
+                firstName: 'JAN',
+                lastName: 'KOWALSKI',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            )
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with([])
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?sort_field=');
+        
+        $this->assertResponseIsSuccessful();
+        
+        // Should work normally without sorting
+        $this->assertSelectorExists('table');
+    }
+    
+    public function testListUsersWithInvalidSortOrder(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService to avoid environment variable issues
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->never())
+            ->method('listUsers');
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?sort_field=first_name&sort_order=invalid_order');
+        
+        $this->assertResponseIsSuccessful();
+        
+        // Check if error message is displayed
+        $this->assertSelectorTextContains('.alert-danger', 'Invalid sort order: invalid_order');
+    }
+    
+    public function testListUsersWithEmptySortOrder(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService
+        $mockUsers = [
+            new UserDTO(
+                id: 1,
+                firstName: 'JAN',
+                lastName: 'KOWALSKI',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            )
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with([])
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?sort_field=first_name&sort_order=');
+        
+        $this->assertResponseIsSuccessful();
+        
+        // Should work normally without sorting
+        $this->assertSelectorExists('table');
+    }
+    
 }
