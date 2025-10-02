@@ -1,10 +1,32 @@
 defmodule PhoenixApiWeb.UsersController do
   use PhoenixApiWeb, :controller
 
-  alias PhoenixApi.Persons
+  alias PhoenixApi.Users
 
   @valid_sort_fields ~w[first_name last_name gender birthdate]a
   @valid_order_fields ~w[asc desc]a
+
+  @doc """
+  Imports random users using default parameters.
+
+  ## Returns
+
+  - `200` with `{"count": number}` - Number of users successfully imported
+  - `500` with `{"error": "error_message"}` - Error occurred during import
+  """
+  def import(conn, _params) do
+    case Users.import(%{}) do
+      {:ok, count} ->
+        conn
+        |> put_status(:ok)
+        |> json(%{count: count})
+
+      {:error, reason} ->
+        conn
+        |> put_status(:internal_server_error)
+        |> json(%{error: to_string(reason)})
+    end
+  end
 
   @doc """
   Lists users with filtering and sorting options.
@@ -25,7 +47,7 @@ defmodule PhoenixApiWeb.UsersController do
   """
   def index(conn, params) do
     with {:ok, parsed_params} <- parse_list_params(params),
-         {:ok, users} <- Persons.list_persons(parsed_params) do
+         {:ok, users} <- Users.list_users(parsed_params) do
       conn
       |> put_status(:ok)
       |> json(%{data: users})
@@ -47,7 +69,7 @@ defmodule PhoenixApiWeb.UsersController do
   """
   def show(conn, %{"id" => id_string}) do
     with {:ok, id} <- parse_id(id_string),
-         {:ok, user} <- Persons.get_person(id) do
+         {:ok, user} <- Users.get_user(id) do
       conn
       |> put_status(:ok)
       |> json(%{data: user})
@@ -85,7 +107,7 @@ defmodule PhoenixApiWeb.UsersController do
   """
   def create(conn, params) do
     with {:ok, parsed_params} <- parse_create_params(params),
-         {:ok, user} <- Persons.create_person(parsed_params) do
+         {:ok, user} <- Users.create_user(parsed_params) do
       conn
       |> put_status(:created)
       |> json(%{data: user})
@@ -125,7 +147,7 @@ defmodule PhoenixApiWeb.UsersController do
   def update(conn, %{"id" => id_string} = params) do
     with {:ok, id} <- parse_id(id_string),
          {:ok, parsed_params} <- parse_update_params(params),
-         {:ok, updated_user} <- Persons.update_person(id, parsed_params) do
+         {:ok, updated_user} <- Users.update_user(id, parsed_params) do
       conn
       |> put_status(:ok)
       |> json(%{data: updated_user})
@@ -157,7 +179,7 @@ defmodule PhoenixApiWeb.UsersController do
   """
   def delete(conn, %{"id" => id_string}) do
     with {:ok, id} <- parse_id(id_string),
-         :ok <- Persons.delete_person(id) do
+         :ok <- Users.delete_user(id) do
       conn
       |> put_status(:no_content)
       |> json(%{})

@@ -1,15 +1,15 @@
-defmodule PhoenixApi.Persons do
+defmodule PhoenixApi.Users do
   @moduledoc """
-  Module for importing and generating random person data.
+  Module for importing and generating random user data.
 
   This module provides functionality to fetch names from external APIs
-  and generate random persons with birth dates within specified ranges.
+  and generate random users with birth dates within specified ranges.
   """
 
   alias PhoenixApi.ApiClient
   alias PhoenixApi.RandomNamesGenerator
   alias PhoenixApi.Repo
-  alias PhoenixApi.Schemas.Person
+  alias PhoenixApi.Schemas.User
 
   import Ecto.Query
 
@@ -49,7 +49,7 @@ defmodule PhoenixApi.Persons do
   @default_top 100
 
   @doc """
-  Imports names from external APIs and saves random persons to the database.
+  Imports names from external APIs and saves random users to the database.
 
   ## Parameters
 
@@ -57,12 +57,12 @@ defmodule PhoenixApi.Persons do
     - `urls` - Map with URLs for male and female first/last names
     - `birth_date_from` - Start date for birth date range (optional, defaults to #{@default_birth_date_from})
     - `birth_date_to` - End date for birth date range (optional, defaults to #{@default_birth_date_to})
-    - `count` - Number of persons to generate (optional, defaults to #{@default_count})
+    - `count` - Number of users to generate (optional, defaults to #{@default_count})
     - `top` - Number of names to fetch from each URL (optional, defaults to #{@default_top})
 
   ## Returns
 
-  - `{:ok, count}` - Number of persons successfully saved to database
+  - `{:ok, count}` - Number of users successfully saved to database
   - `{:error, reason}` - Error tuple with reason for failure
 
   ## Examples
@@ -83,7 +83,7 @@ defmodule PhoenixApi.Persons do
       ...>   count: 5,
       ...>   top: 50
       ...> }
-      iex> PhoenixApi.Persons.import(params)
+      iex> PhoenixApi.Users.import(params)
       {:ok, 5}
 
   """
@@ -91,7 +91,7 @@ defmodule PhoenixApi.Persons do
   def import(params) do
     with {:ok, processed_params} <- process_import_params(params),
          {:ok, names} <- fetch_names(processed_params),
-         {:ok, count} <- save_persons(names, processed_params) do
+         {:ok, count} <- save_users(names, processed_params) do
       {:ok, count}
     else
       {:error, reason} -> {:error, reason}
@@ -173,27 +173,27 @@ defmodule PhoenixApi.Persons do
     end
   end
 
-  @spec save_persons(map(), import_params()) :: {:ok, non_neg_integer()} | {:error, any()}
-  defp save_persons(names, params) do
+  @spec save_users(map(), import_params()) :: {:ok, non_neg_integer()} | {:error, any()}
+  defp save_users(names, params) do
     birth_date_range = Date.range(params.birth_date_from, params.birth_date_to)
-    generated_persons = RandomNamesGenerator.call(names, birth_date_range, params.count)
+    generated_users = RandomNamesGenerator.call(names, birth_date_range, params.count)
 
-    # Convert generated persons to data for insert_all
+    # Convert generated users to data for insert_all
     now = NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
 
-    person_data =
-      Enum.map(generated_persons, fn person ->
+    user_data =
+      Enum.map(generated_users, fn user ->
         %{
-          first_name: person.first_name,
-          last_name: person.last_name,
-          gender: person.gender,
-          birthdate: person.birth_date,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          gender: user.gender,
+          birthdate: user.birth_date,
           inserted_at: now,
           updated_at: now
         }
       end)
 
-    case Repo.insert_all(Person, person_data) do
+    case Repo.insert_all(User, user_data) do
       {count, _} -> {:ok, count}
     end
   end
@@ -201,7 +201,7 @@ defmodule PhoenixApi.Persons do
   # CRUD Operations
 
   @doc """
-  Lists persons with filtering and sorting.
+  Lists users with filtering and sorting.
 
   ## Parameters
 
@@ -209,105 +209,105 @@ defmodule PhoenixApi.Persons do
 
   ## Returns
 
-  - `{:ok, [Person.t()]}` - List of persons
+  - `{:ok, [User.t()]}` - List of users
   """
-  @spec list_persons(map()) :: {:ok, [Person.t()]}
-  def list_persons(params) do
-    persons =
+  @spec list_users(map()) :: {:ok, [User.t()]}
+  def list_users(params) do
+    users =
       params
       |> build_query()
       |> Repo.all()
 
-    {:ok, persons}
+    {:ok, users}
   end
 
   @doc """
-  Gets a person by ID.
+  Gets a user by ID.
 
   ## Parameters
 
-  - `id` - Person ID
+  - `id` - User ID
 
   ## Returns
 
-  - `{:ok, person}` - Person data
-  - `{:error, :not_found}` - Person not found
+  - `{:ok, user}` - User data
+  - `{:error, :not_found}` - User not found
   """
-  @spec get_person(integer()) :: {:ok, Person.t()} | {:error, :not_found}
-  def get_person(id) do
-    case Repo.get(Person, id) do
+  @spec get_user(integer()) :: {:ok, User.t()} | {:error, :not_found}
+  def get_user(id) do
+    case Repo.get(User, id) do
       nil -> {:error, :not_found}
-      person -> {:ok, person}
+      user -> {:ok, user}
     end
   end
 
   @doc """
-  Creates a new person.
+  Creates a new user.
 
   ## Parameters
 
-  - `attrs` - Person attributes
+  - `attrs` - User attributes
 
   ## Returns
 
-  - `{:ok, person}` - Created person
+  - `{:ok, user}` - Created user
   - `{:error, changeset}` - Validation errors
   """
-  @spec create_person(map()) :: {:ok, Person.t()} | {:error, Ecto.Changeset.t()}
-  def create_person(attrs) do
-    %Person{}
-    |> Person.changeset(attrs)
+  @spec create_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def create_user(attrs) do
+    %User{}
+    |> User.changeset(attrs)
     |> Repo.insert()
   end
 
   @doc """
-  Updates an existing person.
+  Updates an existing user.
 
   ## Parameters
 
-  - `id` - Person ID
+  - `id` - User ID
   - `attrs` - Updated attributes
 
   ## Returns
 
-  - `{:ok, person}` - Updated person
-  - `{:error, :not_found}` - Person not found
+  - `{:ok, user}` - Updated user
+  - `{:error, :not_found}` - User not found
   - `{:error, changeset}` - Validation errors
   """
-  @spec update_person(integer(), map()) ::
-          {:ok, Person.t()} | {:error, :not_found | Ecto.Changeset.t()}
-  def update_person(id, attrs) do
-    case Repo.get(Person, id) do
+  @spec update_user(integer(), map()) ::
+          {:ok, User.t()} | {:error, :not_found | Ecto.Changeset.t()}
+  def update_user(id, attrs) do
+    case Repo.get(User, id) do
       nil ->
         {:error, :not_found}
 
-      person ->
-        person
-        |> Person.changeset(attrs)
+      user ->
+        user
+        |> User.changeset(attrs)
         |> Repo.update()
     end
   end
 
   @doc """
-  Deletes a person.
+  Deletes a user.
 
   ## Parameters
 
-  - `id` - Person ID
+  - `id` - User ID
 
   ## Returns
 
   - `:ok` - Successfully deleted
-  - `{:error, :not_found}` - Person not found
+  - `{:error, :not_found}` - User not found
   """
-  @spec delete_person(integer()) :: :ok | {:error, :not_found}
-  def delete_person(id) do
-    case Repo.get(Person, id) do
+  @spec delete_user(integer()) :: :ok | {:error, :not_found}
+  def delete_user(id) do
+    case Repo.get(User, id) do
       nil ->
         {:error, :not_found}
 
-      person ->
-        Repo.delete(person)
+      user ->
+        Repo.delete(user)
         :ok
     end
   end
@@ -315,7 +315,7 @@ defmodule PhoenixApi.Persons do
   # Private helper functions for query building
 
   defp build_query(params) do
-    Person
+    User
     |> filter_by_first_name(params[:first_name])
     |> filter_by_last_name(params[:last_name])
     |> filter_by_gender(params[:gender])
@@ -362,8 +362,7 @@ defmodule PhoenixApi.Persons do
       :last_name -> order_by(query, [p], [{^order, p.last_name}])
       :gender -> order_by(query, [p], [{^order, p.gender}])
       :birthdate -> order_by(query, [p], [{^order, p.birthdate}])
+      _ -> order_by(query, [p], asc: p.id)
     end
   end
-
-  defp apply_sorting(query, _, _), do: order_by(query, [p], asc: p.id)
 end

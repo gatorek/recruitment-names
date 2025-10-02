@@ -1,11 +1,11 @@
-defmodule PhoenixApi.PersonsTest do
+defmodule PhoenixApi.UsersTest do
   use ExUnit.Case, async: false
   import Mimic
 
-  alias PhoenixApi.Persons
+  alias PhoenixApi.Users
   alias PhoenixApi.ApiClient
   alias PhoenixApi.Repo
-  alias PhoenixApi.Schemas.Person, as: PersonSchema
+  alias PhoenixApi.Schemas.User, as: UserSchema
 
   # Test URLs from .env-example
   @male_first_name_url "https://api.dane.gov.pl/media/resources/20250124/8_-_Wykaz_imion_m%C4%99skich_os%C3%B3b_%C5%BCyj%C4%85cych_wg_pola_imi%C4%99_pierwsze_wyst%C4%99puj%C4%85cych_w_rejestrze_PESEL_bez_zgon%C3%B3w.csv"
@@ -20,7 +20,7 @@ defmodule PhoenixApi.PersonsTest do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(PhoenixApi.Repo)
 
     # Set default configuration for tests
-    Application.put_env(:phoenix_api, :person,
+    Application.put_env(:phoenix_api, :user,
       male_first_name_url: @male_first_name_url,
       male_last_name_url: @male_last_name_url,
       female_first_name_url: @female_first_name_url,
@@ -28,12 +28,12 @@ defmodule PhoenixApi.PersonsTest do
     )
 
     # Clean up database before each test
-    Repo.delete_all(PersonSchema)
+    Repo.delete_all(UserSchema)
     :ok
   end
 
   describe "import/1" do
-    test "successfully imports and generates persons with all parameters provided" do
+    test "successfully imports and generates users with all parameters provided" do
       # Mock ApiClient calls
       stub(ApiClient, :call, fn url, _count ->
         case url do
@@ -71,23 +71,23 @@ defmodule PhoenixApi.PersonsTest do
         top: 5
       }
 
-      assert {:ok, count} = Persons.import(params)
+      assert {:ok, count} = Users.import(params)
       assert count == 3
 
-      # Check that persons were saved to database
-      saved_persons = Repo.all(PersonSchema)
-      assert length(saved_persons) == 3
+      # Check that users were saved to database
+      saved_users = Repo.all(UserSchema)
+      assert length(saved_users) == 3
 
-      # Check structure of saved persons
-      for person <- saved_persons do
-        assert person.gender in [:male, :female]
-        assert is_binary(person.first_name)
-        assert is_binary(person.last_name)
-        assert %Date{} = person.birthdate
+      # Check structure of saved users
+      for user <- saved_users do
+        assert user.gender in [:male, :female]
+        assert is_binary(user.first_name)
+        assert is_binary(user.last_name)
+        assert %Date{} = user.birthdate
 
         # Check that birth date is within range
-        assert Date.compare(person.birthdate, ~D[1990-01-01]) != :lt
-        assert Date.compare(person.birthdate, ~D[2000-12-31]) != :gt
+        assert Date.compare(user.birthdate, ~D[1990-01-01]) != :lt
+        assert Date.compare(user.birthdate, ~D[2000-12-31]) != :gt
       end
     end
 
@@ -128,18 +128,18 @@ defmodule PhoenixApi.PersonsTest do
         }
       }
 
-      assert {:ok, count} = Persons.import(params)
+      assert {:ok, count} = Users.import(params)
       # default count
       assert count == 100
 
-      # Check that persons were saved to database
-      saved_persons = Repo.all(PersonSchema)
-      assert length(saved_persons) == 100
+      # Check that users were saved to database
+      saved_users = Repo.all(UserSchema)
+      assert length(saved_users) == 100
 
       # Check that birth dates are within default range
-      for person <- saved_persons do
-        assert Date.compare(person.birthdate, ~D[1970-01-01]) != :lt
-        assert Date.compare(person.birthdate, ~D[2024-12-31]) != :gt
+      for user <- saved_users do
+        assert Date.compare(user.birthdate, ~D[1970-01-01]) != :lt
+        assert Date.compare(user.birthdate, ~D[2024-12-31]) != :gt
       end
     end
 
@@ -166,12 +166,12 @@ defmodule PhoenixApi.PersonsTest do
         top: 3
       }
 
-      assert {:ok, count} = Persons.import(params)
+      assert {:ok, count} = Users.import(params)
       assert count == 2
 
-      # Check that persons were saved to database
-      saved_persons = Repo.all(PersonSchema)
-      assert length(saved_persons) == 2
+      # Check that users were saved to database
+      saved_users = Repo.all(UserSchema)
+      assert length(saved_users) == 2
     end
 
     test "returns error when birth_date_from is after birth_date_to" do
@@ -212,7 +212,7 @@ defmodule PhoenixApi.PersonsTest do
         top: 1
       }
 
-      assert {:error, :invalid_date_range} = Persons.import(params)
+      assert {:error, :invalid_date_range} = Users.import(params)
     end
 
     test "returns error when ApiClient fails" do
@@ -242,7 +242,7 @@ defmodule PhoenixApi.PersonsTest do
         top: 1
       }
 
-      assert {:error, :invalid_url} = Persons.import(params)
+      assert {:error, :invalid_url} = Users.import(params)
     end
 
     test "generates empty list when count is 0" do
@@ -281,12 +281,12 @@ defmodule PhoenixApi.PersonsTest do
         top: 1
       }
 
-      assert {:ok, count} = Persons.import(params)
+      assert {:ok, count} = Users.import(params)
       assert count == 0
 
-      # Check that no persons were saved to database
-      saved_persons = Repo.all(PersonSchema)
-      assert Enum.empty?(saved_persons)
+      # Check that no users were saved to database
+      saved_users = Repo.all(UserSchema)
+      assert Enum.empty?(saved_users)
     end
 
     test "handles partial URL configuration" do
@@ -326,15 +326,15 @@ defmodule PhoenixApi.PersonsTest do
         top: 1
       }
 
-      assert {:ok, count} = Persons.import(params)
+      assert {:ok, count} = Users.import(params)
       assert count == 1
 
-      # Check that persons were saved to database
-      saved_persons = Repo.all(PersonSchema)
-      assert length(saved_persons) == 1
+      # Check that users were saved to database
+      saved_users = Repo.all(UserSchema)
+      assert length(saved_users) == 1
     end
 
-    test "validates that generated persons have correct names based on gender" do
+    test "validates that generated users have correct names based on gender" do
       # Mock ApiClient calls
       stub(ApiClient, :call, fn url, _count ->
         case url do
@@ -371,68 +371,68 @@ defmodule PhoenixApi.PersonsTest do
         top: 5
       }
 
-      assert {:ok, count} = Persons.import(params)
+      assert {:ok, count} = Users.import(params)
       assert count == 100
 
-      # Check that persons were saved to database
-      saved_persons = Repo.all(PersonSchema)
-      assert length(saved_persons) == 100
+      # Check that users were saved to database
+      saved_users = Repo.all(UserSchema)
+      assert length(saved_users) == 100
 
-      # Check that male persons have male names
-      male_persons = Enum.filter(saved_persons, &(&1.gender == :male))
+      # Check that male users have male names
+      male_users = Enum.filter(saved_users, &(&1.gender == :male))
 
-      for male <- male_persons do
+      for male <- male_users do
         assert male.first_name in ["JAN", "PIOTR", "STANISŁAW", "ANDRZEJ", "PAWEŁ"]
         assert male.last_name in ["KOWALSKI", "NOWAK", "WIŚNIEWSKI", "WÓJCIK", "KOWALCZYK"]
       end
 
-      # Check that female persons have female names
-      female_persons = Enum.filter(saved_persons, &(&1.gender == :female))
+      # Check that female users have female names
+      female_users = Enum.filter(saved_users, &(&1.gender == :female))
 
-      for female <- female_persons do
+      for female <- female_users do
         assert female.first_name in ["ANNA", "MARIA", "KRYSTYNA", "BARBARA", "DANUTA"]
         assert female.last_name in ["KOWALSKA", "NOWAK", "WIŚNIEWSKA", "WÓJCIK", "KOWALCZYK"]
       end
     end
 
     @tag :skip
-    test "successfully imports persons using real API endpoints" do
+    test "successfully imports users using real API endpoints" do
       params = %{
         count: 5,
         top: 10
       }
 
-      assert {:ok, count} = Persons.import(params)
+      assert {:ok, count} = Users.import(params)
       assert count == 5
 
-      # Check that persons were saved to database
-      saved_persons = Repo.all(PersonSchema)
-      assert length(saved_persons) == 5
+      # Check that users were saved to database
+      saved_users = Repo.all(UserSchema)
+      assert length(saved_users) == 5
 
-      # Verify that all saved persons have valid data
-      for person <- saved_persons do
-        assert person.gender in [:male, :female]
-        assert is_binary(person.first_name)
-        assert is_binary(person.last_name)
-        assert %Date{} = person.birthdate
-        assert String.length(person.first_name) > 0
-        assert String.length(person.last_name) > 0
+      # Verify that all saved users have valid data
+      for user <- saved_users do
+        assert user.gender in [:male, :female]
+        assert is_binary(user.first_name)
+        assert is_binary(user.last_name)
+        assert %Date{} = user.birthdate
+        assert String.length(user.first_name) > 0
+        assert String.length(user.last_name) > 0
       end
     end
   end
 
-  describe "list_persons" do
-    test "returns empty list when no persons exist" do
-      {:ok, result} = Persons.list_persons(%{})
+  describe "list_users" do
+    test "returns empty list when no users exist" do
+      {:ok, result} = Users.list_users(%{})
 
       assert result == []
     end
 
-    test "returns list of persons" do
+    test "returns list of users" do
       # Create test users
       _users = create_test_users(5)
 
-      {:ok, result} = Persons.list_persons(%{})
+      {:ok, result} = Users.list_users(%{})
 
       assert length(result) == 5
     end
@@ -444,10 +444,10 @@ defmodule PhoenixApi.PersonsTest do
         %{first_name: "Johnny", last_name: "Walker", gender: :male, birthdate: ~D[1985-12-10]}
       ])
 
-      {:ok, result} = Persons.list_persons(%{first_name: "John"})
+      {:ok, result} = Users.list_users(%{first_name: "John"})
 
       assert length(result) == 2
-      assert Enum.all?(result, fn person -> String.contains?(person.first_name, "John") end)
+      assert Enum.all?(result, fn user -> String.contains?(user.first_name, "John") end)
     end
 
     test "filters by part of first_name" do
@@ -457,10 +457,10 @@ defmodule PhoenixApi.PersonsTest do
         %{first_name: "Johnny", last_name: "Walker", gender: :male, birthdate: ~D[1985-12-10]}
       ])
 
-      {:ok, result} = Persons.list_persons(%{first_name: "ohn"})
+      {:ok, result} = Users.list_users(%{first_name: "ohn"})
 
       assert length(result) == 2
-      assert Enum.all?(result, fn person -> String.contains?(person.first_name, "ohn") end)
+      assert Enum.all?(result, fn user -> String.contains?(user.first_name, "ohn") end)
     end
 
     test "filters by last_name" do
@@ -470,10 +470,10 @@ defmodule PhoenixApi.PersonsTest do
         %{first_name: "Bob", last_name: "Smith", gender: :male, birthdate: ~D[1985-12-10]}
       ])
 
-      {:ok, result} = Persons.list_persons(%{last_name: "Smith"})
+      {:ok, result} = Users.list_users(%{last_name: "Smith"})
 
       assert length(result) == 2
-      assert Enum.all?(result, fn person -> String.contains?(person.last_name, "Smith") end)
+      assert Enum.all?(result, fn user -> String.contains?(user.last_name, "Smith") end)
     end
 
     test "filters by gender" do
@@ -483,7 +483,7 @@ defmodule PhoenixApi.PersonsTest do
         %{first_name: "Bob", last_name: "Johnson", gender: :male, birthdate: ~D[1985-12-10]}
       ])
 
-      {:ok, result} = Persons.list_persons(%{gender: :female})
+      {:ok, result} = Users.list_users(%{gender: :female})
 
       assert length(result) == 1
       assert hd(result).gender == :female
@@ -497,7 +497,7 @@ defmodule PhoenixApi.PersonsTest do
       ])
 
       {:ok, result} =
-        Persons.list_persons(%{
+        Users.list_users(%{
           birthdate_from: ~D[1990-01-01],
           birthdate_to: ~D[1999-12-31]
         })
@@ -512,7 +512,7 @@ defmodule PhoenixApi.PersonsTest do
         %{first_name: "Bob", last_name: "Johnson", gender: :male, birthdate: ~D[1985-12-10]}
       ])
 
-      {:ok, result} = Persons.list_persons(%{sort: :first_name, order: :asc})
+      {:ok, result} = Users.list_users(%{sort: :first_name, order: :asc})
 
       first_names = Enum.map(result, & &1.first_name)
       assert first_names == ["Alice", "Bob", "Charlie"]
@@ -525,7 +525,7 @@ defmodule PhoenixApi.PersonsTest do
         %{first_name: "Leon", last_name: "Kowal", gender: :male, birthdate: ~D[1990-01-01]}
       ])
 
-      {:ok, result} = Persons.list_persons(%{sort: :first_name, order: :asc})
+      {:ok, result} = Users.list_users(%{sort: :first_name, order: :asc})
 
       first_names = Enum.map(result, & &1.first_name)
       assert first_names == ["Leon", "Łukasz", "Manfred"]
@@ -538,15 +538,15 @@ defmodule PhoenixApi.PersonsTest do
         %{first_name: "Bob", last_name: "Johnson", gender: :male, birthdate: ~D[1985-12-10]}
       ])
 
-      {:ok, result} = Persons.list_persons(%{sort: :birthdate, order: :desc})
+      {:ok, result} = Users.list_users(%{sort: :birthdate, order: :desc})
 
       birthdates = Enum.map(result, & &1.birthdate)
       assert birthdates == [~D[1995-05-15], ~D[1990-01-01], ~D[1985-12-10]]
     end
   end
 
-  describe "get_person" do
-    test "returns person when found" do
+  describe "get_user" do
+    test "returns user when found" do
       user =
         create_test_user(%{
           first_name: "John",
@@ -555,7 +555,7 @@ defmodule PhoenixApi.PersonsTest do
           birthdate: ~D[1990-01-01]
         })
 
-      {:ok, result} = Persons.get_person(user.id)
+      {:ok, result} = Users.get_user(user.id)
 
       assert result.id == user.id
       assert result.first_name == "John"
@@ -564,13 +564,13 @@ defmodule PhoenixApi.PersonsTest do
       assert result.birthdate == ~D[1990-01-01]
     end
 
-    test "returns error when person not found" do
-      assert {:error, :not_found} = Persons.get_person(999_999)
+    test "returns error when user not found" do
+      assert {:error, :not_found} = Users.get_user(999_999)
     end
   end
 
-  describe "create_person" do
-    test "creates person with valid data" do
+  describe "create_user" do
+    test "creates user with valid data" do
       attrs = %{
         first_name: "John",
         last_name: "Doe",
@@ -578,13 +578,13 @@ defmodule PhoenixApi.PersonsTest do
         birthdate: ~D[1990-01-01]
       }
 
-      {:ok, person} = Persons.create_person(attrs)
+      {:ok, user} = Users.create_user(attrs)
 
-      assert person.first_name == "John"
-      assert person.last_name == "Doe"
-      assert person.gender == :male
-      assert person.birthdate == ~D[1990-01-01]
-      assert person.id
+      assert user.first_name == "John"
+      assert user.last_name == "Doe"
+      assert user.gender == :male
+      assert user.birthdate == ~D[1990-01-01]
+      assert user.id
     end
 
     test "returns validation errors for invalid data" do
@@ -596,7 +596,7 @@ defmodule PhoenixApi.PersonsTest do
         birthdate: "invalid-date"
       }
 
-      {:error, changeset} = Persons.create_person(attrs)
+      {:error, changeset} = Users.create_user(attrs)
 
       assert changeset.errors[:first_name]
       assert changeset.errors[:last_name]
@@ -604,7 +604,7 @@ defmodule PhoenixApi.PersonsTest do
     end
 
     test "returns validation errors for missing required fields" do
-      {:error, changeset} = Persons.create_person(%{})
+      {:error, changeset} = Users.create_user(%{})
 
       assert changeset.errors[:first_name]
       assert changeset.errors[:last_name]
@@ -613,8 +613,8 @@ defmodule PhoenixApi.PersonsTest do
     end
   end
 
-  describe "update_person" do
-    test "updates person with valid data" do
+  describe "update_user" do
+    test "updates user with valid data" do
       user =
         create_test_user(%{
           first_name: "John",
@@ -630,22 +630,22 @@ defmodule PhoenixApi.PersonsTest do
         "birthdate" => "1995-05-15"
       }
 
-      {:ok, updated_person} = Persons.update_person(user.id, attrs)
+      {:ok, updated_user} = Users.update_user(user.id, attrs)
 
-      assert updated_person.id == user.id
-      assert updated_person.first_name == "Jane"
-      assert updated_person.last_name == "Smith"
-      assert updated_person.gender == :female
-      assert updated_person.birthdate == ~D[1995-05-15]
+      assert updated_user.id == user.id
+      assert updated_user.first_name == "Jane"
+      assert updated_user.last_name == "Smith"
+      assert updated_user.gender == :female
+      assert updated_user.birthdate == ~D[1995-05-15]
     end
 
-    test "returns error when person not found" do
+    test "returns error when user not found" do
       attrs = %{
         first_name: "Jane",
         last_name: "Smith"
       }
 
-      assert {:error, :not_found} = Persons.update_person(999_999, attrs)
+      assert {:error, :not_found} = Users.update_user(999_999, attrs)
     end
 
     test "returns validation errors for invalid data" do
@@ -665,7 +665,7 @@ defmodule PhoenixApi.PersonsTest do
         birthdate: "invalid-date"
       }
 
-      {:error, changeset} = Persons.update_person(user.id, invalid_attrs)
+      {:error, changeset} = Users.update_user(user.id, invalid_attrs)
 
       assert changeset.errors[:first_name]
       assert changeset.errors[:last_name]
@@ -673,8 +673,8 @@ defmodule PhoenixApi.PersonsTest do
     end
   end
 
-  describe "delete_person" do
-    test "deletes person when found" do
+  describe "delete_user" do
+    test "deletes user when found" do
       user =
         create_test_user(%{
           first_name: "John",
@@ -683,12 +683,12 @@ defmodule PhoenixApi.PersonsTest do
           birthdate: ~D[1990-01-01]
         })
 
-      assert :ok = Persons.delete_person(user.id)
-      assert {:error, :not_found} = Persons.get_person(user.id)
+      assert :ok = Users.delete_user(user.id)
+      assert {:error, :not_found} = Users.get_user(user.id)
     end
 
-    test "returns error when person not found" do
-      assert {:error, :not_found} = Persons.delete_person(999_999)
+    test "returns error when user not found" do
+      assert {:error, :not_found} = Users.delete_user(999_999)
     end
   end
 
@@ -704,8 +704,8 @@ defmodule PhoenixApi.PersonsTest do
 
     attrs = Map.merge(default_attrs, attrs)
 
-    %PersonSchema{}
-    |> PersonSchema.changeset(attrs)
+    %UserSchema{}
+    |> UserSchema.changeset(attrs)
     |> Repo.insert!()
   end
 

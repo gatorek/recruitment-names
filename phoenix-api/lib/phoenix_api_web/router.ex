@@ -8,7 +8,7 @@ defmodule PhoenixApiWeb.Router do
   scope "/", PhoenixApiWeb do
     pipe_through :api
 
-    post "/import", PersonsController, :import
+    post "/import", UsersController, :import
 
     # User CRUD operations
     get "/users", UsersController, :index

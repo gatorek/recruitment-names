@@ -11,7 +11,7 @@ defmodule PhoenixApi.Schemas.User do
   schema "users" do
     field :first_name, :string
     field :last_name, :string
-    field :gender, Ecto.Enum, values: [:male, :female]
+    field :gender, Ecto.Enum, values: [:female, :male]
     field :birthdate, :date
 
     timestamps()
