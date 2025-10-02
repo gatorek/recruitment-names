@@ -2,9 +2,9 @@ services:
   db:
     image: postgres:14.19-alpine
     env_file:
-      - .env
+      - .env.dev
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_dev_data:/var/lib/postgresql/data
     ports:
       - "5432:${POSTGRES_PORT:-5432}"
     healthcheck:
@@ -18,7 +18,7 @@ services:
       context: ./phoenix-api
       dockerfile: Dockerfile.dev
     env_file:
-      - .env
+      - .env.dev
     ports:
       - "4000:${PORT:-4000}"
     depends_on:
@@ -29,6 +29,7 @@ services:
     command: >
       sh -c "
         mix deps.get &&
+        mix ecto.migrate &&
         mix phx.server
       "
 
@@ -37,7 +38,7 @@ services:
       context: ./symfony-app
       dockerfile: Dockerfile.dev
     env_file:
-      - .env
+      - .env.dev
     ports:
       - "8000:8000"
     volumes:
@@ -51,4 +52,4 @@ services:
       "
 
 volumes:
-  postgres_data:
+  postgres_dev_data:

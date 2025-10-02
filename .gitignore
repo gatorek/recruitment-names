@@ -1,1 +1,9 @@
+# Environment files
 .env
+.env.local
+.env.*.local
+
+# Keep example files for reference
+!.env.dev
+!.env.prod
+!.env.test
