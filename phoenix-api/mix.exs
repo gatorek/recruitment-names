@@ -74,7 +74,7 @@ defmodule PhoenixApi.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "test.all": ["ecto.create --quiet", "ecto.migrate --quiet", "test --include skip"],
+      "test.all": ["ecto.create --quiet", "ecto.migrate --quiet", "test --include external --include flaky"],
       precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"]
     ]
   end

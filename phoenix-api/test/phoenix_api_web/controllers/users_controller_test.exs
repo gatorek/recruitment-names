@@ -161,6 +161,44 @@ defmodule PhoenixApiWeb.UsersControllerTest do
       # Assert content type
       assert get_resp_header(conn, "content-type") == ["application/json; charset=utf-8"]
     end
+
+    @tag :external
+    test "POST /import uses real API and imports users", %{conn: conn} do
+      # Use the real URLs as in production
+      params = %{
+        "count" => 3,
+        "urls" => %{
+          "male" => %{
+            "first_name" => "https://data.gov.pl/sites/default/files/imi%C4%99a_m%C4%99skie.csv",
+            "last_name" => "https://data.gov.pl/sites/default/files/nazwiska_m%C4%99skie.csv"
+          },
+          "female" => %{
+            "first_name" => "https://data.gov.pl/sites/default/files/imi%C4%99a_%C5%BCe%C5%84skie.csv",
+            "last_name" => "https://data.gov.pl/sites/default/files/nazwiska_%C5%BCe%C5%84skie.csv"
+          }
+        }
+      }
+
+      # Clean up users before test
+      Repo.delete_all(UserSchema)
+
+      conn = post(conn, ~p"/import", params)
+
+      assert %{"count" => count} = json_response(conn, 200)
+      assert count == 100
+
+      # Check that users were actually inserted
+      users = Repo.all(UserSchema)
+      assert length(users) == 100
+
+      # Check that required fields are present and valid
+      for user <- users do
+        assert is_binary(user.first_name)
+        assert is_binary(user.last_name)
+        assert user.gender in [:male, :female]
+        assert %Date{} = user.birthdate
+      end
+    end
   end
 
   describe "GET /users" do

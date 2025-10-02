@@ -161,7 +161,7 @@ defmodule PhoenixApi.ApiClientTest do
       assert names == ["JAN", "PIOTR"]
     end
 
-    @tag :skip
+    @tag :external
     test "works with a real CSV endpoint" do
       assert {:ok, names} = PhoenixApi.ApiClient.call(@real_data_url, 3)
       assert names == ["PIOTR", "KRZYSZTOF", "TOMASZ"]

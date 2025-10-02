@@ -79,7 +79,7 @@ defmodule PhoenixApi.RandomNamesGeneratorTest do
     end
 
     # This test may occasionally fail; skipped by default.
-    @tag :skip
+    @tag :flaky
     test "generates different results on multiple calls", %{names: names, date_range: date_range} do
       result1 = RandomNamesGenerator.call(names, date_range, 5)
       result2 = RandomNamesGenerator.call(names, date_range, 5)

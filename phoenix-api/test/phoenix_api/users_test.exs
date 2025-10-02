@@ -395,7 +395,7 @@ defmodule PhoenixApi.UsersTest do
       end
     end
 
-    @tag :skip
+    @tag :external
     test "successfully imports users using real API endpoints" do
       params = %{
         count: 5,
