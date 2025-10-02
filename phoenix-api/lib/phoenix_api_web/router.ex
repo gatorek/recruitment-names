@@ -13,6 +13,9 @@ defmodule PhoenixApiWeb.Router do
   scope "/", PhoenixApiWeb do
     pipe_through :api
 
+    # Health check endpoint
+    get "/healthcheck", HealthController, :check
+
     # User CRUD operations (public)
     get "/users", UsersController, :index
     get "/users/:id", UsersController, :show

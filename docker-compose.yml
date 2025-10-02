@@ -26,6 +26,12 @@ services:
         condition: service_healthy
     volumes:
       - ./phoenix-api:/app
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://${PHX_HOST:-phoenix}:${PORT:-4000}/healthcheck || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 40s
     command: >
       sh -c "
         mix deps.get &&
@@ -44,7 +50,8 @@ services:
     volumes:
       - ./symfony-app:/var/www/html
     depends_on:
-      - phoenix
+      phoenix:
+        condition: service_healthy
     command: >
       sh -c "
         composer install &&
