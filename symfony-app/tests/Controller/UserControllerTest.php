@@ -1466,4 +1466,147 @@ class UserControllerTest extends WebTestCase
         $this->assertStringNotContainsString('is-invalid', $lastNameField->attr('class') ?? '', 'Last name field should not have is-invalid class');
     }
     
+    public function testListUsersWithLastNameFilter(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with filtered users
+        $mockUsers = [
+            new UserDTO(
+                id: 1,
+                firstName: 'JAN',
+                lastName: 'KOWALSKI',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            ),
+            new UserDTO(
+                id: 2,
+                firstName: 'ANNA',
+                lastName: 'KOWALSKA',
+                gender: 'female',
+                birthdate: new \DateTime('1990-12-25')
+            )
+        ];
+        
+        $expectedFilters = [
+            'last_name' => 'KOWALSK'
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with($expectedFilters)
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?last_name=KOWALSK');
+        
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        
+        // Check if users are displayed
+        $this->assertSelectorTextContains('h1', 'Users List');
+        $this->assertSelectorTextContains('h5', 'Found 2 users');
+        
+        // Check if both users with matching last name are displayed
+        $this->assertSelectorTextContains('body', 'JAN KOWALSKI');
+        $this->assertSelectorTextContains('body', 'ANNA KOWALSKA');
+    }
+    
+    public function testListUsersWithLastNameFilterAndSorting(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with filtered and sorted users
+        $mockUsers = [
+            new UserDTO(
+                id: 2,
+                firstName: 'ANNA',
+                lastName: 'KOWALSKA',
+                gender: 'female',
+                birthdate: new \DateTime('1990-12-25')
+            ),
+            new UserDTO(
+                id: 1,
+                firstName: 'JAN',
+                lastName: 'KOWALSKI',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            )
+        ];
+        
+        $expectedFilters = [
+            'last_name' => 'KOWALSK',
+            'sort' => 'first_name',
+            'order' => 'desc'
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with($expectedFilters)
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?last_name=KOWALSK&sort_field=first_name&sort_order=desc');
+        
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        
+        // Check if users are displayed
+        $this->assertSelectorTextContains('h1', 'Users List');
+        $this->assertSelectorTextContains('h5', 'Found 2 users');
+        
+        // Check if both users with matching last name are displayed
+        $this->assertSelectorTextContains('body', 'ANNA KOWALSKA');
+        $this->assertSelectorTextContains('body', 'JAN KOWALSKI');
+    }
+    
+    public function testListUsersWithEmptyLastNameFilter(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with all users (no filter applied)
+        $mockUsers = [
+            new UserDTO(
+                id: 1,
+                firstName: 'JAN',
+                lastName: 'KOWALSKI',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            ),
+            new UserDTO(
+                id: 2,
+                firstName: 'ANNA',
+                lastName: 'NOWAK',
+                gender: 'female',
+                birthdate: new \DateTime('1990-12-25')
+            )
+        ];
+        
+        $expectedFilters = [];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with($expectedFilters)
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?last_name=');
+        
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        
+        // Check if all users are displayed (no filtering)
+        $this->assertSelectorTextContains('h1', 'Users List');
+        $this->assertSelectorTextContains('h5', 'Found 2 users');
+        
+        // Check if both users are displayed
+        $this->assertSelectorTextContains('body', 'JAN KOWALSKI');
+        $this->assertSelectorTextContains('body', 'ANNA NOWAK');
+    }
 }

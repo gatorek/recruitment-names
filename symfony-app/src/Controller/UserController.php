@@ -191,11 +191,16 @@ class UserController extends AbstractController
         try {
             $sortField = $this->getSortField($request);
             $sortOrder = $this->getSortOrder($request);
+            $lastName = $this->getLastNameFilter($request);
             $filters = [];
             
             if ($sortOrder && $sortField) {
                 $filters['sort'] = $sortField;
                 $filters['order'] = $sortOrder;
+            }
+            
+            if ($lastName !== null) {
+                $filters['last_name'] = $lastName;
             }
             
             $users = $this->phoenixApiService->listUsers($filters);
@@ -300,6 +305,24 @@ class UserController extends AbstractController
             default:
                 throw new \InvalidArgumentException("Invalid sort order: {$currentSort}");
         }
+    }
+
+    /**
+     * Retrieves the last_name filter parameter
+     *
+     * @param Request $request The HTTP request
+     * @return string|null The last_name filter or null if not provided or empty
+     */
+    private function getLastNameFilter(Request $request): ?string
+    {
+        $lastName = $request->query->get('last_name');
+        
+        // If null or empty string, return null
+        if ($lastName === null || $lastName === '') {
+            return null;
+        }
+        
+        return $lastName;
     }
 
 }
