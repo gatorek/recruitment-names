@@ -205,98 +205,24 @@ class UserController extends AbstractController
     public function list(Request $request): Response
     {
         try {
-            $sortField = $this->getSortField($request);
-            $sortOrder = $this->getSortOrder($request);
-            $lastName = $this->getLastNameFilter($request);
-            $firstName = $this->getFirstNameFilter($request);
-            $gender = $this->getGenderFilter($request);
-            $birthdateFrom = $this->getBirthdateFromFilter($request);
-            $birthdateTo = $this->getBirthdateToFilter($request);
-            $filters = [];
-
-            if ($sortOrder && $sortField) {
-                $filters['sort'] = $sortField;
-                $filters['order'] = $sortOrder;
-            }
-
-            if ($lastName !== null) {
-                $filters['last_name'] = $lastName;
-            }
-
-            if ($firstName !== null) {
-                $filters['first_name'] = $firstName;
-            }
-
-            if ($gender !== null) {
-                $filters['gender'] = $gender;
-            }
-
+            $filterData = $this->extractFilterData($request);
+            
             // Validate birthdate range
-            if ($birthdateFrom !== null && $birthdateTo !== null) {
-                if ($birthdateFrom > $birthdateTo) {
-                    $this->addFlash('error', 'Birthdate "from" cannot be greater than birthdate "to".');
-
-                    return $this->render('user/list.html.twig', [
-                        'users' => [],
-                        'currentSort' => $sortOrder,
-                        'currentSortField' => $sortField,
-                        'currentLastNameFilter' => $lastName,
-                        'currentFirstNameFilter' => $firstName,
-                        'currentGenderFilter' => $gender,
-                        'currentBirthdateFromFilter' => $birthdateFrom,
-                        'currentBirthdateToFilter' => $birthdateTo
-                    ]);
-                }
+            if ($this->isInvalidBirthdateRange($filterData['birthdateFrom'], $filterData['birthdateTo'])) {
+                $this->addFlash('error', 'Birthdate "from" cannot be greater than birthdate "to".');
+                return $this->renderUserList([], $filterData);
             }
 
-            if ($birthdateFrom !== null) {
-                $filters['birthdate_from'] = $birthdateFrom;
-            }
-
-            if ($birthdateTo !== null) {
-                $filters['birthdate_to'] = $birthdateTo;
-            }
-
+            $filters = $this->buildFilters($filterData);
             $users = $this->phoenixApiService->listUsers($filters);
 
-            return $this->render('user/list.html.twig', [
-                'users' => $users,
-                'currentSort' => $sortOrder,
-                'currentSortField' => $sortField,
-                'currentLastNameFilter' => $lastName,
-                'currentFirstNameFilter' => $firstName,
-                'currentGenderFilter' => $gender,
-                'currentBirthdateFromFilter' => $birthdateFrom,
-                'currentBirthdateToFilter' => $birthdateTo
-            ]);
+            return $this->renderUserList($users, $filterData);
         } catch (InvalidArgumentException $e) {
             $this->addFlash('error', 'Invalid sorting parameter: ' . $e->getMessage());
-
-            return $this->render('user/list.html.twig', [
-                'users' => [],
-                'currentSort' => null,
-                'currentSortField' => null,
-                'currentLastNameFilter' => null,
-                'currentFirstNameFilter' => null,
-                'currentGenderFilter' => null,
-                'currentBirthdateFromFilter' => null,
-                'currentBirthdateToFilter' => null,
-                'error' => $e->getMessage()
-            ]);
+            return $this->renderUserList([], $this->getEmptyFilterData());
         } catch (Exception $e) {
             $this->addFlash('error', 'Failed to fetch users list: ' . $e->getMessage());
-
-            return $this->render('user/list.html.twig', [
-                'users' => [],
-                'currentSort' => null,
-                'currentSortField' => 'first_name',
-                'currentLastNameFilter' => null,
-                'currentFirstNameFilter' => null,
-                'currentGenderFilter' => null,
-                'currentBirthdateFromFilter' => null,
-                'currentBirthdateToFilter' => null,
-                'error' => $e->getMessage()
-            ]);
+            return $this->renderUserList([], $this->getEmptyFilterData());
         }
     }
 
@@ -479,5 +405,91 @@ class UserController extends AbstractController
         }
 
         return $birthdateTo;
+    }
+
+    /**
+     * Extracts all filter data from the request
+     */
+    private function extractFilterData(Request $request): array
+    {
+        return [
+            'sortField' => $this->getSortField($request),
+            'sortOrder' => $this->getSortOrder($request),
+            'lastName' => $this->getLastNameFilter($request),
+            'firstName' => $this->getFirstNameFilter($request),
+            'gender' => $this->getGenderFilter($request),
+            'birthdateFrom' => $this->getBirthdateFromFilter($request),
+            'birthdateTo' => $this->getBirthdateToFilter($request),
+        ];
+    }
+
+    /**
+     * Builds filters array for API call
+     */
+    private function buildFilters(array $filterData): array
+    {
+        $filters = [];
+
+        if ($filterData['sortOrder'] && $filterData['sortField']) {
+            $filters['sort'] = $filterData['sortField'];
+            $filters['order'] = $filterData['sortOrder'];
+        }
+
+        $filterMappings = [
+            'lastName' => 'last_name',
+            'firstName' => 'first_name',
+            'gender' => 'gender',
+            'birthdateFrom' => 'birthdate_from',
+            'birthdateTo' => 'birthdate_to',
+        ];
+
+        foreach ($filterMappings as $key => $apiKey) {
+            if ($filterData[$key] !== null) {
+                $filters[$apiKey] = $filterData[$key];
+            }
+        }
+
+        return $filters;
+    }
+
+    /**
+     * Validates birthdate range
+     */
+    private function isInvalidBirthdateRange(?string $from, ?string $to): bool
+    {
+        return $from !== null && $to !== null && $from > $to;
+    }
+
+    /**
+     * Renders the user list template with data
+     */
+    private function renderUserList(array $users, array $filterData): Response
+    {
+        return $this->render('user/list.html.twig', [
+            'users' => $users,
+            'currentSort' => $filterData['sortOrder'],
+            'currentSortField' => $filterData['sortField'],
+            'currentLastNameFilter' => $filterData['lastName'],
+            'currentFirstNameFilter' => $filterData['firstName'],
+            'currentGenderFilter' => $filterData['gender'],
+            'currentBirthdateFromFilter' => $filterData['birthdateFrom'],
+            'currentBirthdateToFilter' => $filterData['birthdateTo'],
+        ]);
+    }
+
+    /**
+     * Returns empty filter data for error cases
+     */
+    private function getEmptyFilterData(): array
+    {
+        return [
+            'sortField' => null,
+            'sortOrder' => null,
+            'lastName' => null,
+            'firstName' => null,
+            'gender' => null,
+            'birthdateFrom' => null,
+            'birthdateTo' => null,
+        ];
     }
 }
