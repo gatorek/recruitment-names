@@ -8,8 +8,8 @@ import Config
 # The block below contains prod specific runtime configuration.
 
 # Person module URLs configuration
-if config_env() != :test do
-  # Require environment variables for non-test environments
+if config_env() == :prod do
+  # Require environment variables for prod environment
   config :phoenix_api, :person,
     male_first_name_url:
       System.get_env("MALE_FIRST_NAME_URL") ||
