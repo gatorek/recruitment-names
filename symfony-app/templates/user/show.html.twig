@@ -1,0 +1,94 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}User {{ user.firstName }} {{ user.lastName }}{% endblock %}
+
+{% block body %}
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card">
+                    <div class="card-header bg-light text-center py-4">
+                        <h1 class="card-title h2 mb-2">{{ user.firstName }} {{ user.lastName }}</h1>
+                        <small class="text-muted">ID: {{ user.id }}</small>
+                    </div>
+                    
+                    <div class="card-body p-4">
+                        {% for type, messages in app.flashes %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ type == 'error' ? 'danger' : type }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                        
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded user-detail-row">
+                                    <span class="fw-semibold text-muted">First Name:</span>
+                                    <span class="text-dark">{{ user.firstName }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded user-detail-row">
+                                    <span class="fw-semibold text-muted">Last Name:</span>
+                                    <span class="text-dark">{{ user.lastName }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded user-detail-row">
+                                    <span class="fw-semibold text-muted">Gender:</span>
+                                    <span class="gender-badge gender-{{ user.gender }}">
+                                        {% if user.gender == 'male' %}
+                                            Male
+                                        {% elseif user.gender == 'female' %}
+                                            Female
+                                        {% else %}
+                                            {{ user.gender }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded user-detail-row">
+                                    <span class="fw-semibold text-muted">Birth Date:</span>
+                                    <span class="text-dark">{{ user.birthdate|date('d.m.Y') }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer text-center">
+                        <a href="{{ path('user_list') }}" class="btn btn-outline-secondary me-2">
+                            <i class="bi bi-list"></i> User List
+                        </a>
+                        <a href="{{ path('user_edit', {'id': user.id}) }}" class="btn btn-outline-warning me-2">
+                            <i class="bi bi-pencil"></i> Edit User
+                        </a>
+                        <button type="button" class="btn btn-outline-danger" onclick="confirmDelete({{ user.id }}, '{{ user.firstName }} {{ user.lastName }}')">
+                            <i class="bi bi-trash"></i> Delete User
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden delete form -->
+    <form id="deleteForm" method="POST" style="display: none;">
+        <input type="hidden" name="_method" value="DELETE">
+    </form>
+
+    <script>
+        function confirmDelete(userId, userName) {
+            if (confirm(`Are you sure you want to delete user "${userName}"?\n\nThis action cannot be undone.`)) {
+                const form = document.getElementById('deleteForm');
+                form.action = `/users/${userId}`;
+                form.submit();
+            }
+        }
+    </script>
+{% endblock %}

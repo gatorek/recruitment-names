@@ -32,5 +32,23 @@ services:
         mix phx.server
       "
 
+  symfony:
+    build:
+      context: ./symfony-app
+      dockerfile: Dockerfile.dev
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./symfony-app:/var/www/html
+    depends_on:
+      - phoenix
+    command: >
+      sh -c "
+        composer install &&
+        php -S 0.0.0.0:8000 -t public
+      "
+
 volumes:
   postgres_data:

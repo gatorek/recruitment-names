@@ -1,0 +1,114 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit User {{ user.firstName }} {{ user.lastName }}{% endblock %}
+
+{% block body %}
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card">
+                    <div class="card-header bg-light text-center py-4">
+                        <h1 class="card-title h2 mb-2">Edit User</h1>
+                        <small class="text-muted">{{ user.firstName }} {{ user.lastName }} (ID: {{ user.id }})</small>
+                    </div>
+                    
+                    <div class="card-body p-4">
+                        {% for type, messages in app.flashes %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ type == 'error' ? 'danger' : type }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                        
+                        {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
+                        
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    {{ form_label(form.firstName, null, {'label_attr': {'class': 'form-label fw-semibold'}}) }}
+                                    {% set firstNameErrors = form.firstName.vars.errors %}
+                                    {% set firstNameClass = firstNameErrors|length > 0 ? 'form-control is-invalid' : 'form-control' %}
+                                    {{ form_widget(form.firstName, {'attr': {'class': firstNameClass}}) }}
+                                    {% if firstNameErrors|length > 0 %}
+                                        <div class="invalid-feedback">
+                                            {% for error in firstNameErrors %}
+                                                {{ error.message }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-group">
+                                    {{ form_label(form.lastName, null, {'label_attr': {'class': 'form-label fw-semibold'}}) }}
+                                    {% set lastNameErrors = form.lastName.vars.errors %}
+                                    {% set lastNameClass = lastNameErrors|length > 0 ? 'form-control is-invalid' : 'form-control' %}
+                                    {{ form_widget(form.lastName, {'attr': {'class': lastNameClass}}) }}
+                                    {% if lastNameErrors|length > 0 %}
+                                        <div class="invalid-feedback">
+                                            {% for error in lastNameErrors %}
+                                                {{ error.message }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-group">
+                                    {{ form_label(form.gender, null, {'label_attr': {'class': 'form-label fw-semibold'}}) }}
+                                    {% set genderErrors = form.gender.vars.errors %}
+                                    {% set genderClass = genderErrors|length > 0 ? 'form-select is-invalid' : 'form-select' %}
+                                    {{ form_widget(form.gender, {'attr': {'class': genderClass}}) }}
+                                    {% if genderErrors|length > 0 %}
+                                        <div class="invalid-feedback">
+                                            {% for error in genderErrors %}
+                                                {{ error.message }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-group">
+                                    {{ form_label(form.birthdate, null, {'label_attr': {'class': 'form-label fw-semibold'}}) }}
+                                    {% set birthdateErrors = form.birthdate.vars.errors %}
+                                    {% set birthdateClass = birthdateErrors|length > 0 ? 'form-control is-invalid' : 'form-control' %}
+                                    {{ form_widget(form.birthdate, {'attr': {'class': birthdateClass}}) }}
+                                    {% if birthdateErrors|length > 0 %}
+                                        <div class="invalid-feedback">
+                                            {% for error in birthdateErrors %}
+                                                {{ error.message }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-12 text-center">
+                                {{ form_widget(form.save) }}
+                            </div>
+                        </div>
+                        
+                        {{ form_end(form) }}
+                    </div>
+                    
+                    <div class="card-footer text-center">
+                        <a href="{{ path('user_list') }}" class="btn btn-outline-secondary me-2">
+                            <i class="bi bi-list"></i> User List
+                        </a>
+                        <a href="{{ path('user_show', {'id': user.id}) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-eye"></i> View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
