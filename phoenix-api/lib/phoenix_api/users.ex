@@ -141,7 +141,7 @@ defmodule PhoenixApi.Users do
 
   @spec get_default_urls() :: url_map()
   defp get_default_urls do
-    config = Application.get_env(:phoenix_api, :person)
+    config = Application.get_env(:phoenix_api, :import)
 
     %{
       male: %{

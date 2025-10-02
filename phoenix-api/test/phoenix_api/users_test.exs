@@ -7,25 +7,17 @@ defmodule PhoenixApi.UsersTest do
   alias PhoenixApi.Repo
   alias PhoenixApi.Schemas.User, as: UserSchema
 
-  # Test URLs from .env-example
-  @male_first_name_url "https://api.dane.gov.pl/media/resources/20250124/8_-_Wykaz_imion_m%C4%99skich_os%C3%B3b_%C5%BCyj%C4%85cych_wg_pola_imi%C4%99_pierwsze_wyst%C4%99puj%C4%85cych_w_rejestrze_PESEL_bez_zgon%C3%B3w.csv"
-  @male_last_name_url "https://api.dane.gov.pl/media/resources/20250123/nazwiska_m%C4%99skie-osoby_%C5%BCyj%C4%85ce.csv"
-  @female_first_name_url "https://api.dane.gov.pl/media/resources/20250124/8_-_Wykaz_imion_%C5%BCe%C5%84skich__os%C3%B3b_%C5%BCyj%C4%85cych_wg_pola_imi%C4%99_pierwsze_wyst%C4%99puj%C4%85cych_w_rejestrze_PESEL_bez_zgon%C3%B3w.csv"
-  @female_last_name_url "https://api.dane.gov.pl/media/resources/20250123/nazwiska_%C5%BCe%C5%84skie-osoby_%C5%BCyj%C4%85ce_efby1gw.csv"
+  @config Application.compile_env(:phoenix_api, :import, [])
+  @male_first_name_url @config[:male_first_name_url]
+  @male_last_name_url @config[:male_last_name_url]
+  @female_first_name_url @config[:female_first_name_url]
+  @female_last_name_url @config[:female_last_name_url]
 
   setup :verify_on_exit!
 
   setup do
     # Setup database sandbox
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(PhoenixApi.Repo)
-
-    # Set default configuration for tests
-    Application.put_env(:phoenix_api, :user,
-      male_first_name_url: @male_first_name_url,
-      male_last_name_url: @male_last_name_url,
-      female_first_name_url: @female_first_name_url,
-      female_last_name_url: @female_last_name_url
-    )
 
     # Clean up database before each test
     Repo.delete_all(UserSchema)
