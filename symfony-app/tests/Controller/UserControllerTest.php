@@ -1838,4 +1838,94 @@ class UserControllerTest extends WebTestCase
         $this->assertSelectorExists('a[href*="/users"]');
         $this->assertSelectorTextContains('a[href*="/users"]', 'Clear Filter');
     }
+
+    public function testDeleteUserSuccess(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('delete')
+            ->with(1)
+            ->willReturn(true);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $client->request('DELETE', '/users/1');
+        
+        // Should redirect to user list
+        $this->assertResponseRedirects('/users');
+        
+        // Follow redirect and check flash message
+        $crawler = $client->followRedirect();
+        $this->assertSelectorTextContains('.alert-success', 'User has been deleted successfully');
+    }
+
+    public function testDeleteUserNotFound(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService to throw an exception
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('delete')
+            ->with(999)
+            ->willThrowException(new \Exception('User with ID 999 not found'));
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $client->request('DELETE', '/users/999');
+        
+        // Should redirect to user list even on error
+        $this->assertResponseRedirects('/users');
+        
+        // Follow redirect and check error flash message
+        $crawler = $client->followRedirect();
+        $this->assertSelectorTextContains('.alert-danger', 'Failed to delete user: User with ID 999 not found');
+    }
+
+    public function testDeleteUserWithInvalidId(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService to ensure delete is never called for invalid ID
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->never())
+            ->method('delete');
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        // Test with invalid ID (non-numeric)
+        $client->request('DELETE', '/users/invalid');
+        
+        // Should redirect to user list
+        $this->assertResponseRedirects('/users');
+        
+        // Follow redirect and check error flash message
+        $crawler = $client->followRedirect();
+        $this->assertSelectorTextContains('.alert-danger', 'Invalid user ID \'invalid\'. Please provide a valid positive number.');
+    }
+
+    public function testDeleteUserWithNegativeId(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService to ensure delete is never called for negative ID
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->never())
+            ->method('delete');
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        // Test with negative ID
+        $client->request('DELETE', '/users/-1');
+        
+        // Should redirect to user list
+        $this->assertResponseRedirects('/users');
+        
+        // Follow redirect and check error flash message
+        $crawler = $client->followRedirect();
+        $this->assertSelectorTextContains('.alert-danger', 'Invalid user ID \'-1\'. Please provide a valid positive number.');
+    }
 }

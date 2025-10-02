@@ -185,6 +185,26 @@ class UserController extends AbstractController
         }
     }
 
+    #[Route('/users/{id}', name: 'user_delete', methods: ['DELETE', 'POST'])]
+    public function delete(string $id): RedirectResponse
+    {
+        try {
+            $userId = $this->validateAndParseUserId($id);
+            
+            // Call Phoenix API to delete user
+            $this->phoenixApiService->delete($userId);
+            
+            $this->addFlash('success', 'User has been deleted successfully');
+            
+        } catch (InvalidUserIdException $e) {
+            $this->addFlash('error', $e->getMessage());
+        } catch (\Exception $e) {
+            $this->addFlash('error', 'Failed to delete user: ' . $e->getMessage());
+        }
+        
+        return $this->redirectToRoute('user_list');
+    }
+
     #[Route('/users', name: 'user_list', methods: ['GET'])]
     public function list(Request $request): Response
     {
