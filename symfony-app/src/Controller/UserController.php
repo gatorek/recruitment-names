@@ -7,6 +7,8 @@ use App\Exception\InvalidUserIdException;
 use App\Form\UserCreateType;
 use App\Form\UserEditType;
 use App\Service\PhoenixApiService;
+use Exception;
+use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,10 +23,10 @@ class UserController extends AbstractController
     }
 
     #[Route('/users/create', name: 'user_create', methods: ['GET'])]
-    public function create(Request $request): Response
+    public function create(): Response
     {
         $form = $this->createForm(UserCreateType::class);
-        
+
         return $this->render('user/create.html.twig', [
             'form' => $form->createView()
         ]);
@@ -35,7 +37,7 @@ class UserController extends AbstractController
     {
         $form = $this->createForm(UserCreateType::class);
         $form->handleRequest($request);
-        
+
         if ($form->isSubmitted() && $form->isValid()) {
             try {
                 // Create UserDTO from form data (without ID for creation)
@@ -46,24 +48,23 @@ class UserController extends AbstractController
                     gender: $form->get('gender')->getData(),
                     birthdate: $form->get('birthdate')->getData()
                 );
-                
+
                 // Call Phoenix API to create user
                 $createdUser = $this->phoenixApiService->create($userDTO);
-                
+
                 $this->addFlash('success', 'User has been created successfully');
                 return $this->redirectToRoute('user_show', ['id' => $createdUser->id]);
-                
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->addFlash('error', 'Failed to create user: ' . $e->getMessage());
                 // Continue to render the form with error
             }
         }
-        
+
         // Check if form has validation errors
         if ($form->isSubmitted() && !$form->isValid()) {
             $this->addFlash('error', 'Please correct the errors below.');
         }
-        
+
         // Always render the form with current data and validation errors
         return $this->render('user/create.html.twig', [
             'form' => $form->createView()
@@ -76,46 +77,44 @@ class UserController extends AbstractController
         try {
             $userId = $this->validateAndParseUserId($id);
             $user = $this->phoenixApiService->getUser($userId);
-            
+
             return $this->render('user/show.html.twig', [
                 'user' => $user
             ]);
-            
         } catch (InvalidUserIdException $e) {
             $this->addFlash('error', $e->getMessage());
             return $this->redirectToRoute('user_list');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->addFlash('error', 'Failed to fetch user data: ' . $e->getMessage());
             return $this->redirectToRoute('user_list');
         }
     }
 
     #[Route('/users/{id}/edit', name: 'user_edit', methods: ['GET'])]
-    public function edit(string $id, Request $request): Response
+    public function edit(string $id): Response
     {
         try {
             $userId = $this->validateAndParseUserId($id);
-            
+
             // Always fetch fresh user data from API
             $user = $this->phoenixApiService->getUser($userId);
-            
+
             $form = $this->createForm(UserEditType::class, $user);
-            
+
             // Set default values for unmapped fields with fresh data from API
             $form->get('firstName')->setData($user->firstName);
             $form->get('lastName')->setData($user->lastName);
             $form->get('gender')->setData($user->gender);
             $form->get('birthdate')->setData($user->birthdate);
-            
+
             return $this->render('user/edit.html.twig', [
                 'user' => $user,
                 'form' => $form->createView()
             ]);
-            
         } catch (InvalidUserIdException $e) {
             $this->addFlash('error', $e->getMessage());
             return $this->redirectToRoute('user_list');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->addFlash('error', 'Failed to fetch user data: ' . $e->getMessage());
             return $this->redirectToRoute('user_list');
         }
@@ -126,12 +125,12 @@ class UserController extends AbstractController
     {
         try {
             $userId = $this->validateAndParseUserId($id);
-            
+
             // Create form without binding to user data
             // We'll use the data submitted by the user
             $form = $this->createForm(UserEditType::class);
             $form->handleRequest($request);
-            
+
             // Get user data from form for display purposes
             $userData = [
                 'id' => $userId,
@@ -140,8 +139,8 @@ class UserController extends AbstractController
                 'gender' => $form->get('gender')->getData(),
                 'birthdate' => $form->get('birthdate')->getData()
             ];
-            
-            
+
+
             if ($form->isSubmitted() && $form->isValid()) {
                 try {
                     // Create UserDTO from form data
@@ -152,34 +151,32 @@ class UserController extends AbstractController
                         gender: $form->get('gender')->getData(),
                         birthdate: $form->get('birthdate')->getData()
                     );
-                    
+
                     // Call Phoenix API to update user
                     $this->phoenixApiService->update($userDTO);
-                    
+
                     $this->addFlash('success', 'User has been updated successfully');
                     return $this->redirectToRoute('user_show', ['id' => $userId]);
-                    
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->addFlash('error', 'Failed to update user: ' . $e->getMessage());
                     // Continue to render the form with error
                 }
             }
-            
+
             // Check if form has validation errors
             if ($form->isSubmitted() && !$form->isValid()) {
                 $this->addFlash('error', 'Please correct the errors below.');
             }
-            
+
             // Always render the form with current data and validation errors
             return $this->render('user/edit.html.twig', [
                 'user' => $userData,
                 'form' => $form->createView()
             ]);
-            
         } catch (InvalidUserIdException $e) {
             $this->addFlash('error', $e->getMessage());
             return $this->redirectToRoute('user_list');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->addFlash('error', 'Failed to fetch user data: ' . $e->getMessage());
             return $this->redirectToRoute('user_list');
         }
@@ -190,18 +187,17 @@ class UserController extends AbstractController
     {
         try {
             $userId = $this->validateAndParseUserId($id);
-            
+
             // Call Phoenix API to delete user
             $this->phoenixApiService->delete($userId);
-            
+
             $this->addFlash('success', 'User has been deleted successfully');
-            
         } catch (InvalidUserIdException $e) {
             $this->addFlash('error', $e->getMessage());
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->addFlash('error', 'Failed to delete user: ' . $e->getMessage());
         }
-        
+
         return $this->redirectToRoute('user_list');
     }
 
@@ -217,29 +213,29 @@ class UserController extends AbstractController
             $birthdateFrom = $this->getBirthdateFromFilter($request);
             $birthdateTo = $this->getBirthdateToFilter($request);
             $filters = [];
-            
+
             if ($sortOrder && $sortField) {
                 $filters['sort'] = $sortField;
                 $filters['order'] = $sortOrder;
             }
-            
+
             if ($lastName !== null) {
                 $filters['last_name'] = $lastName;
             }
-            
+
             if ($firstName !== null) {
                 $filters['first_name'] = $firstName;
             }
-            
+
             if ($gender !== null) {
                 $filters['gender'] = $gender;
             }
-            
+
             // Validate birthdate range
             if ($birthdateFrom !== null && $birthdateTo !== null) {
                 if ($birthdateFrom > $birthdateTo) {
                     $this->addFlash('error', 'Birthdate "from" cannot be greater than birthdate "to".');
-                    
+
                     return $this->render('user/list.html.twig', [
                         'users' => [],
                         'currentSort' => $sortOrder,
@@ -252,17 +248,17 @@ class UserController extends AbstractController
                     ]);
                 }
             }
-            
+
             if ($birthdateFrom !== null) {
                 $filters['birthdate_from'] = $birthdateFrom;
             }
-            
+
             if ($birthdateTo !== null) {
                 $filters['birthdate_to'] = $birthdateTo;
             }
-            
+
             $users = $this->phoenixApiService->listUsers($filters);
-            
+
             return $this->render('user/list.html.twig', [
                 'users' => $users,
                 'currentSort' => $sortOrder,
@@ -273,10 +269,9 @@ class UserController extends AbstractController
                 'currentBirthdateFromFilter' => $birthdateFrom,
                 'currentBirthdateToFilter' => $birthdateTo
             ]);
-            
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             $this->addFlash('error', 'Invalid sorting parameter: ' . $e->getMessage());
-            
+
             return $this->render('user/list.html.twig', [
                 'users' => [],
                 'currentSort' => null,
@@ -288,9 +283,9 @@ class UserController extends AbstractController
                 'currentBirthdateToFilter' => null,
                 'error' => $e->getMessage()
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->addFlash('error', 'Failed to fetch users list: ' . $e->getMessage());
-            
+
             return $this->render('user/list.html.twig', [
                 'users' => [],
                 'currentSort' => null,
@@ -308,25 +303,25 @@ class UserController extends AbstractController
     /**
      * Validates and parses the user ID parameter
      *
-     * @param string $id The ID parameter from the URL
+     * @param string $userId The ID parameter from the URL
      * @return int The validated and parsed user ID
      * @throws InvalidUserIdException When the ID is invalid
      */
-    private function validateAndParseUserId(string $id): int
+    private function validateAndParseUserId(string $userId): int
     {
         // Check if the ID is numeric
-        if (!is_numeric($id)) {
-            throw new InvalidUserIdException($id);
+        if (!is_numeric($userId)) {
+            throw new InvalidUserIdException($userId);
         }
-        
-        $userId = (int)$id;
-        
+
+        $parsedUserId = (int)$userId;
+
         // Check if the ID is positive
-        if ($userId <= 0) {
-            throw new InvalidUserIdException($id);
+        if ($parsedUserId <= 0) {
+            throw new InvalidUserIdException($userId);
         }
-        
-        return $userId;
+
+        return $parsedUserId;
     }
 
     /**
@@ -334,24 +329,24 @@ class UserController extends AbstractController
      *
      * @param Request $request The HTTP request
      * @return string|null The validated sort field or null if not provided
-     * @throws \InvalidArgumentException If sort_field has invalid value
+     * @throws InvalidArgumentException If sort_field has invalid value
      */
     private function getSortField(Request $request): ?string
     {
         $sortField = $request->query->get('sort_field');
-        
+
         // If null or empty string, return null
         if ($sortField === null || $sortField === '') {
             return null;
         }
-        
+
         // Check if it's a valid sort field
         $validSortFields = ['first_name', 'last_name', 'gender', 'birthdate'];
-        
+
         if (!in_array($sortField, $validSortFields, true)) {
-            throw new \InvalidArgumentException("Invalid sort field: {$sortField}");
+            throw new InvalidArgumentException("Invalid sort field: {$sortField}");
         }
-        
+
         return $sortField;
     }
 
@@ -361,12 +356,12 @@ class UserController extends AbstractController
      *
      * @param Request $request The HTTP request
      * @return string|null The sort order ('asc', 'desc', or null for default)
-     * @throws \InvalidArgumentException If sort_order has invalid value
+     * @throws InvalidArgumentException If sort_order has invalid value
      */
     private function getSortOrder(Request $request): ?string
     {
         $currentSort = $request->query->get('sort_order');
-                
+
         switch ($currentSort) {
             case 'asc':
                 return 'asc'; // Currently ascending
@@ -376,7 +371,7 @@ class UserController extends AbstractController
             case null:
                 return null;
             default:
-                throw new \InvalidArgumentException("Invalid sort order: {$currentSort}");
+                throw new InvalidArgumentException("Invalid sort order: {$currentSort}");
         }
     }
 
@@ -389,12 +384,12 @@ class UserController extends AbstractController
     private function getLastNameFilter(Request $request): ?string
     {
         $lastName = $request->query->get('last_name');
-        
+
         // If null or empty string, return null
         if ($lastName === null || $lastName === '') {
             return null;
         }
-        
+
         return $lastName;
     }
 
@@ -407,12 +402,12 @@ class UserController extends AbstractController
     private function getFirstNameFilter(Request $request): ?string
     {
         $firstName = $request->query->get('first_name');
-        
+
         // If null or empty string, return null
         if ($firstName === null || $firstName === '') {
             return null;
         }
-        
+
         return $firstName;
     }
 
@@ -425,18 +420,18 @@ class UserController extends AbstractController
     private function getGenderFilter(Request $request): ?string
     {
         $gender = $request->query->get('gender');
-        
+
         // If null or empty string, return null
         if ($gender === null || $gender === '') {
             return null;
         }
-        
+
         // Validate gender value
         $validGenders = ['male', 'female'];
         if (!in_array($gender, $validGenders, true)) {
             return null;
         }
-        
+
         return $gender;
     }
 
@@ -449,17 +444,17 @@ class UserController extends AbstractController
     private function getBirthdateFromFilter(Request $request): ?string
     {
         $birthdateFrom = $request->query->get('birthdate_from');
-        
+
         // If null or empty string, return null
         if ($birthdateFrom === null || $birthdateFrom === '') {
             return null;
         }
-        
+
         // Validate date format (YYYY-MM-DD)
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthdateFrom)) {
             return null;
         }
-        
+
         return $birthdateFrom;
     }
 
@@ -472,18 +467,17 @@ class UserController extends AbstractController
     private function getBirthdateToFilter(Request $request): ?string
     {
         $birthdateTo = $request->query->get('birthdate_to');
-        
+
         // If null or empty string, return null
         if ($birthdateTo === null || $birthdateTo === '') {
             return null;
         }
-        
+
         // Validate date format (YYYY-MM-DD)
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthdateTo)) {
             return null;
         }
-        
+
         return $birthdateTo;
     }
-
 }

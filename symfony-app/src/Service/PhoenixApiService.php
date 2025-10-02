@@ -9,6 +9,7 @@ use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
+use Exception;
 
 class PhoenixApiService
 {
@@ -22,14 +23,14 @@ class PhoenixApiService
     /**
      * Fetch user data from Phoenix API
      *
-     * @param int $id User ID
+     * @param int $userId User ID
      * @return UserDTO
-     * @throws \Exception
+     * @throws Exception
      */
-    public function getUser(int $id): UserDTO
+    public function getUser(int $userId): UserDTO
     {
-        $url = $this->buildUrl("/users/{$id}");
-        
+        $url = $this->buildUrl("/users/{$userId}");
+
         try {
             $response = $this->httpClient->request('GET', $url, [
                 'headers' => [
@@ -39,27 +40,32 @@ class PhoenixApiService
             ]);
 
             $statusCode = $response->getStatusCode();
-            
+
             if ($statusCode !== 200) {
-                throw new \Exception("API returned status code: {$statusCode}");
+                throw new Exception("API returned status code: {$statusCode}");
             }
 
             $responseData = $response->toArray();
-            
+
             if (empty($responseData) || !isset($responseData['data'])) {
-                throw new \Exception("User with ID {$id} not found");
+                throw new Exception("User with ID {$userId} not found");
             }
 
             $data = $responseData['data'];
-            
+
             if (empty($data)) {
-                throw new \Exception("User with ID {$id} not found");
+                throw new Exception("User with ID {$userId} not found");
             }
 
             return UserDTO::fromArray($data);
-
-        } catch (ClientExceptionInterface|DecodingExceptionInterface|RedirectionExceptionInterface|ServerExceptionInterface|TransportExceptionInterface $e) {
-            throw new \Exception("Failed to fetch user data: " . $e->getMessage(), 0, $e);
+        } catch (
+            ClientExceptionInterface |
+            DecodingExceptionInterface |
+            RedirectionExceptionInterface |
+            ServerExceptionInterface |
+            TransportExceptionInterface $e
+        ) {
+            throw new Exception("Failed to fetch user data: " . $e->getMessage(), 0, $e);
         }
     }
 
@@ -75,13 +81,13 @@ class PhoenixApiService
      *   - sort: Sort by field (first_name, last_name, gender, birthdate)
      *   - order: Sort order (asc/desc, defaults to asc)
      * @return array Array of UserDTO objects
-     * @throws \Exception
+     * @throws Exception
      */
     public function listUsers(array $filters = []): array
     {
         $queryParams = $this->buildQueryParams($filters);
         $url = $this->buildUrl('/users' . $queryParams);
-        
+
         try {
             $response = $this->httpClient->request('GET', $url, [
                 'headers' => [
@@ -91,15 +97,15 @@ class PhoenixApiService
             ]);
 
             $statusCode = $response->getStatusCode();
-            
+
             if ($statusCode !== 200) {
-                throw new \Exception("API returned status code: {$statusCode}");
+                throw new Exception("API returned status code: {$statusCode}");
             }
 
             $responseData = $response->toArray();
-            
+
             if (!isset($responseData['data']) || !is_array($responseData['data'])) {
-                throw new \Exception("Invalid response format from API");
+                throw new Exception("Invalid response format from API");
             }
 
             $users = [];
@@ -108,9 +114,14 @@ class PhoenixApiService
             }
 
             return $users;
-
-        } catch (ClientExceptionInterface|DecodingExceptionInterface|RedirectionExceptionInterface|ServerExceptionInterface|TransportExceptionInterface $e) {
-            throw new \Exception("Failed to fetch users list: " . $e->getMessage(), 0, $e);
+        } catch (
+            ClientExceptionInterface |
+            DecodingExceptionInterface |
+            RedirectionExceptionInterface |
+            ServerExceptionInterface |
+            TransportExceptionInterface $e
+        ) {
+            throw new Exception("Failed to fetch users list: " . $e->getMessage(), 0, $e);
         }
     }
 
@@ -127,15 +138,15 @@ class PhoenixApiService
      *
      * @param UserDTO $user User data to update
      * @return UserDTO Updated user data
-     * @throws \Exception
+     * @throws Exception
      */
     public function update(UserDTO $user): UserDTO
     {
         $url = $this->buildUrl("/users/{$user->id}");
-        
+
         // Convert UserDTO to array for request body
         $userData = $user->toArray();
-        
+
         try {
             $response = $this->httpClient->request('PUT', $url, [
                 'headers' => [
@@ -147,27 +158,32 @@ class PhoenixApiService
             ]);
 
             $statusCode = $response->getStatusCode();
-            
+
             if ($statusCode !== 200) {
-                throw new \Exception("API returned status code: {$statusCode}");
+                throw new Exception("API returned status code: {$statusCode}");
             }
 
             $responseData = $response->toArray();
-            
+
             if (empty($responseData) || !isset($responseData['data'])) {
-                throw new \Exception("User with ID {$user->id} not found");
+                throw new Exception("User with ID {$user->id} not found");
             }
 
             $data = $responseData['data'];
-            
+
             if (empty($data)) {
-                throw new \Exception("User with ID {$user->id} not found");
+                throw new Exception("User with ID {$user->id} not found");
             }
 
             return UserDTO::fromArray($data);
-
-        } catch (ClientExceptionInterface|DecodingExceptionInterface|RedirectionExceptionInterface|ServerExceptionInterface|TransportExceptionInterface $e) {
-            throw new \Exception("Failed to update user: " . $e->getMessage(), 0, $e);
+        } catch (
+            ClientExceptionInterface |
+            DecodingExceptionInterface |
+            RedirectionExceptionInterface |
+            ServerExceptionInterface |
+            TransportExceptionInterface $e
+        ) {
+            throw new Exception("Failed to update user: " . $e->getMessage(), 0, $e);
         }
     }
 
@@ -176,16 +192,16 @@ class PhoenixApiService
      *
      * @param UserDTO $user User data to create (without ID)
      * @return UserDTO Created user data with ID
-     * @throws \Exception
+     * @throws Exception
      */
     public function create(UserDTO $user): UserDTO
     {
         $url = $this->buildUrl('/users');
-        
+
         // Convert UserDTO to array for request body (without ID)
         $userData = $user->toArray();
         unset($userData['id']); // Remove ID for creation
-        
+
         try {
             $response = $this->httpClient->request('POST', $url, [
                 'headers' => [
@@ -197,41 +213,46 @@ class PhoenixApiService
             ]);
 
             $statusCode = $response->getStatusCode();
-            
+
             if ($statusCode !== 201) {
-                throw new \Exception("API returned status code: {$statusCode}");
+                throw new Exception("API returned status code: {$statusCode}");
             }
 
             $responseData = $response->toArray();
-            
+
             if (empty($responseData) || !isset($responseData['data'])) {
-                throw new \Exception("Failed to create user - invalid response format");
+                throw new Exception("Failed to create user - invalid response format");
             }
 
             $data = $responseData['data'];
-            
+
             if (empty($data)) {
-                throw new \Exception("Failed to create user - empty response data");
+                throw new Exception("Failed to create user - empty response data");
             }
 
             return UserDTO::fromArray($data);
-
-        } catch (ClientExceptionInterface|DecodingExceptionInterface|RedirectionExceptionInterface|ServerExceptionInterface|TransportExceptionInterface $e) {
-            throw new \Exception("Failed to create user: " . $e->getMessage(), 0, $e);
+        } catch (
+            ClientExceptionInterface |
+            DecodingExceptionInterface |
+            RedirectionExceptionInterface |
+            ServerExceptionInterface |
+            TransportExceptionInterface $e
+        ) {
+            throw new Exception("Failed to create user: " . $e->getMessage(), 0, $e);
         }
     }
 
     /**
      * Delete a user
      *
-     * @param int $id User ID to delete
+     * @param int $userId User ID to delete
      * @return bool True if deletion was successful
-     * @throws \Exception
+     * @throws Exception
      */
-    public function delete(int $id): bool
+    public function delete(int $userId): bool
     {
-        $url = $this->buildUrl("/users/{$id}");
-        
+        $url = $this->buildUrl("/users/{$userId}");
+
         try {
             $response = $this->httpClient->request('DELETE', $url, [
                 'headers' => [
@@ -241,15 +262,20 @@ class PhoenixApiService
             ]);
 
             $statusCode = $response->getStatusCode();
-            
+
             if ($statusCode !== 204) {
-                throw new \Exception("API returned status code: {$statusCode}");
+                throw new Exception("API returned status code: {$statusCode}");
             }
 
             return true;
-
-        } catch (ClientExceptionInterface|DecodingExceptionInterface|RedirectionExceptionInterface|ServerExceptionInterface|TransportExceptionInterface $e) {
-            throw new \Exception("Failed to delete user: " . $e->getMessage(), 0, $e);
+        } catch (
+            ClientExceptionInterface |
+            DecodingExceptionInterface |
+            RedirectionExceptionInterface |
+            ServerExceptionInterface |
+            TransportExceptionInterface $e
+        ) {
+            throw new Exception("Failed to delete user: " . $e->getMessage(), 0, $e);
         }
     }
 
@@ -260,7 +286,7 @@ class PhoenixApiService
     {
         $validFilters = array_intersect_key($filters, array_flip([
             'first_name',
-            'last_name', 
+            'last_name',
             'gender',
             'birthdate_from',
             'birthdate_to',
@@ -269,7 +295,7 @@ class PhoenixApiService
         ]));
 
         // Remove null and empty values
-        $validFilters = array_filter($validFilters, function($value) {
+        $validFilters = array_filter($validFilters, function ($value) {
             return $value !== null && $value !== '';
         });
 

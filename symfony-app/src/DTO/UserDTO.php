@@ -2,6 +2,9 @@
 
 namespace App\DTO;
 
+use DateTime;
+use DateTimeInterface;
+
 class UserDTO
 {
     public function __construct(
@@ -9,7 +12,7 @@ class UserDTO
         public readonly string $firstName,
         public readonly string $lastName,
         public readonly string $gender,
-        public readonly \DateTimeInterface $birthdate
+        public readonly DateTimeInterface $birthdate
     ) {
     }
 
@@ -20,7 +23,7 @@ class UserDTO
             firstName: $data['first_name'],
             lastName: $data['last_name'],
             gender: $data['gender'],
-            birthdate: new \DateTime($data['birthdate'])
+            birthdate: new DateTime($data['birthdate'])
         );
     }
 

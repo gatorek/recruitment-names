@@ -22,21 +22,21 @@ trait HttpClientMockTrait
      * Configure HTTP client mock for a single request
      */
     protected function mockHttpRequest(
-        string $method, 
-        string $url, 
-        array $options = [], 
-        int $statusCode = 200, 
+        string $method,
+        string $url,
+        array $options = [],
+        int $statusCode = 200,
         array $responseData = []
     ): void {
         $this->mockHttpClient->expects($this->once())
             ->method('request')
             ->with($method, $url, $options)
             ->willReturn($this->mockResponse);
-            
+
         $this->mockResponse->expects($this->once())
             ->method('getStatusCode')
             ->willReturn($statusCode);
-            
+
         if (!empty($responseData)) {
             $this->mockResponse->expects($this->once())
                 ->method('toArray')

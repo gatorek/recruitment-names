@@ -22,7 +22,7 @@ class HomeControllerTest extends WebTestCase
         $client->request('GET', '/');
 
         $this->assertResponseRedirects('/users');
-        
+
         // Sprawdź czy routing działa poprawnie
         $this->assertRouteSame('home');
     }

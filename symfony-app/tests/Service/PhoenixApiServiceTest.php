@@ -120,7 +120,7 @@ class PhoenixApiServiceTest extends TestCase
 
         $this->assertIsArray($users);
         $this->assertCount(2, $users);
-        
+
         $this->assertInstanceOf(UserDTO::class, $users[0]);
         $this->assertEquals(23, $users[0]->id);
         $this->assertEquals('IRYNA', $users[0]->firstName);
@@ -343,7 +343,7 @@ class PhoenixApiServiceTest extends TestCase
         $this->assertIsArray($users);
         $this->assertCount(0, $users);
     }
-    
+
     /**
      * Create MockHttpClient with query parameters verification
      */
@@ -352,14 +352,14 @@ class PhoenixApiServiceTest extends TestCase
         return new MockHttpClient(function ($method, $url, $options) use ($expectedQueryParams, $mockResponse) {
             // Check HTTP method
             $this->assertEquals('GET', $method);
-            
+
             // Check URL
             $this->assertStringStartsWith('http://localhost:4000/users', $url);
-            
+
             // Check query parameters
             $parsedUrl = parse_url($url);
             $this->assertArrayHasKey('query', $parsedUrl);
-            
+
             parse_str($parsedUrl['query'], $actualQueryParams);
             $this->assertEquals($expectedQueryParams, $actualQueryParams);
 
@@ -511,10 +511,10 @@ class PhoenixApiServiceTest extends TestCase
         return new MockHttpClient(function ($method, $url, $options) use ($expectedUserData, $mockResponse) {
             // Check HTTP method
             $this->assertEquals('PUT', $method);
-            
+
             // Check URL
             $this->assertEquals("http://localhost:4000/users/{$expectedUserData['id']}", $url);
-            
+
             // Check request body
             $this->assertArrayHasKey('body', $options);
             $this->assertEquals(json_encode($expectedUserData), $options['body']);
@@ -745,10 +745,10 @@ class PhoenixApiServiceTest extends TestCase
         return new MockHttpClient(function ($method, $url, $options) use ($expectedUserData, $mockResponse) {
             // Check HTTP method
             $this->assertEquals('POST', $method);
-            
+
             // Check URL
             $this->assertEquals('http://localhost:4000/users', $url);
-            
+
             // Check request body
             $this->assertArrayHasKey('body', $options);
             $this->assertEquals(json_encode($expectedUserData), $options['body']);
@@ -824,7 +824,7 @@ class PhoenixApiServiceTest extends TestCase
         return new MockHttpClient(function ($method, $url, $options) use ($expectedId, $mockResponse) {
             // Check HTTP method
             $this->assertEquals('DELETE', $method);
-            
+
             // Check URL
             $this->assertEquals("http://localhost:4000/users/{$expectedId}", $url);
 
@@ -840,10 +840,10 @@ class PhoenixApiServiceTest extends TestCase
         return new MockHttpClient(function ($method, $url, $options) use ($mockResponse) {
             // Check HTTP method
             $this->assertEquals('GET', $method);
-            
+
             // Check URL - should be without query string
             $this->assertEquals('http://localhost:4000/users', $url);
-            
+
             // Additional verification: ensure no query parameters exist
             $parsedUrl = parse_url($url);
             $this->assertArrayNotHasKey('query', $parsedUrl);

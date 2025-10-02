@@ -6,8 +6,8 @@ use InvalidArgumentException;
 
 class InvalidUserIdException extends InvalidArgumentException
 {
-    public function __construct(string $id)
+    public function __construct(string $userId)
     {
-        parent::__construct("Invalid user ID '{$id}'. Please provide a valid positive number.");
+        parent::__construct("Invalid user ID '{$userId}'. Please provide a valid positive number.");
     }
 }
