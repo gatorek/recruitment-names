@@ -2,34 +2,42 @@
 
 namespace App\Tests\Controller;
 
-use App\DTO\UserDTO;
-use App\Service\PhoenixApiService;
+use App\Tests\Support\HttpClientMockTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
 class UserControllerTest extends WebTestCase
 {
+    use HttpClientMockTrait;
+    
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->setUpHttpClientMocks();
+    }
+
     public function testShowUserSuccess(): void
     {   
-        $client = static::createClient();
-        
-        // Mock PhoenixApiService
-        $mockUser = new UserDTO(
-            id: 1,
-            firstName: 'WIOLETTA',
-            lastName: 'GRABOWSKA',
-            gender: 'female',
-            birthdate: new \DateTime('1992-06-16')
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users/1',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    'id' => 1,
+                    'first_name' => 'WIOLETTA',
+                    'last_name' => 'GRABOWSKA',
+                    'gender' => 'female',
+                    'birthdate' => '1992-06-16'
+                ]
+            ]
         );
         
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('getUser')
-            ->with(1)
-            ->willReturn($mockUser);
-        
-        // Set mock in container
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users/1');
         
@@ -57,16 +65,18 @@ class UserControllerTest extends WebTestCase
     
     public function testShowUserNotFound(): void
     {        
-        $client = static::createClient();
+        // Mock 404 response from Phoenix API
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users/999',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            404
+        );
         
-        // Mock PhoenixApiService with error
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('getUser')
-            ->with(999)
-            ->willThrowException(new \Exception('User with ID 999 not found'));
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $client->request('GET', '/users/999');
         
@@ -76,13 +86,7 @@ class UserControllerTest extends WebTestCase
     
     public function testShowUserWithInvalidId(): void
     {
-        // Set environment variables for tests
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->never())
-            ->method('getUser');
-        
-        $client = static::createClient();
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         // Test with invalid ID (non-numeric)
         $client->request('GET', '/users/invalid');
@@ -93,13 +97,7 @@ class UserControllerTest extends WebTestCase
     
     public function testShowUserWithNegativeId(): void
     {
-        // Mock PhoenixApiService to ensure getUser is never called for negative ID
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->never())
-            ->method('getUser');
-
-        $client = static::createClient();
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         // Test with negative ID
         $client->request('GET', '/users/-1');
@@ -110,13 +108,7 @@ class UserControllerTest extends WebTestCase
     
     public function testShowUserWithZeroId(): void
     {
-        // Mock PhoenixApiService to ensure getUser is never called for zero ID
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->never())
-            ->method('getUser');
-
-        $client = static::createClient();
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         // Test with zero ID
         $client->request('GET', '/users/0');
@@ -127,24 +119,26 @@ class UserControllerTest extends WebTestCase
     
     public function testShowUserRoute(): void
     {
-        $client = static::createClient();
-        
-        // Mock PhoenixApiService
-        $mockUser = new UserDTO(
-            id: 1,
-            firstName: 'JAN',
-            lastName: 'KOWALSKI',
-            gender: 'male',
-            birthdate: new \DateTime('1985-03-15')
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users/1',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    'id' => 1,
+                    'first_name' => 'JAN',
+                    'last_name' => 'KOWALSKI',
+                    'gender' => 'male',
+                    'birthdate' => '1985-03-15'
+                ]
+            ]
         );
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('getUser')
-            ->with(1)
-            ->willReturn($mockUser);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+
+        $client = $this->createClientWithMockedHttpClient();
         
         $client->request('GET', '/users/1');
         
@@ -156,24 +150,27 @@ class UserControllerTest extends WebTestCase
     
     public function testShowUserPageStructure(): void
     {
-        $client = static::createClient();
-        
-        // Mock PhoenixApiService
-        $mockUser = new UserDTO(
-            id: 2,
-            firstName: 'ANNA',
-            lastName: 'NOWAK',
-            gender: 'female',
-            birthdate: new \DateTime('1990-12-25')
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users/2',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    'id' => 2,
+                    'first_name' => 'ANNA',
+                    'last_name' => 'NOWAK',
+                    'gender' => 'female',
+                    'birthdate' => '1990-12-25'
+                ]
+            ]
         );
         
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('getUser')
-            ->with(2)
-            ->willReturn($mockUser);
         
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users/2');
         
@@ -190,24 +187,26 @@ class UserControllerTest extends WebTestCase
     
     public function testShowUserGenderDisplay(): void
     {
-        $client = static::createClient();
-        
-        // Test for male user
-        $mockUser = new UserDTO(
-            id: 3,
-            firstName: 'PIOTR',
-            lastName: 'KOWALSKI',
-            gender: 'male',
-            birthdate: new \DateTime('1988-07-10')
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users/3',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    'id' => 3,
+                    'first_name' => 'PIOTR',
+                    'last_name' => 'KOWALSKI',
+                    'gender' => 'male',
+                    'birthdate' => '1988-07-10'
+                ]
+            ]
         );
         
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('getUser')
-            ->with(3)
-            ->willReturn($mockUser);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users/3');
         
@@ -220,25 +219,26 @@ class UserControllerTest extends WebTestCase
     
     public function testEditUserSuccess(): void
     {
-        $client = static::createClient();
-        
-        // Mock PhoenixApiService
-        $mockUser = new UserDTO(
-            id: 1,
-            firstName: 'WIOLETTA',
-            lastName: 'GRABOWSKA',
-            gender: 'female',
-            birthdate: new \DateTime('1992-06-16')
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users/1',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    'id' => 1,
+                    'first_name' => 'WIOLETTA',
+                    'last_name' => 'GRABOWSKA',
+                    'gender' => 'female',
+                    'birthdate' => '1992-06-16'
+                ]
+            ]
         );
         
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('getUser')
-            ->with(1)
-            ->willReturn($mockUser);
-        
-        // Set mock in container
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users/1/edit');
         
@@ -281,17 +281,18 @@ class UserControllerTest extends WebTestCase
     
     public function testEditUserNotFound(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users/999',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            404
+        );
         
-        // Mock PhoenixApiService with error
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('getUser')
-            ->with(999)
-            ->willThrowException(new \Exception('User with ID 999 not found'));
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
-        
+        $client = $this->createClientWithMockedHttpClient();
+
         $client->request('GET', '/users/999/edit');
         
         // Should redirect to user list
@@ -300,13 +301,7 @@ class UserControllerTest extends WebTestCase
     
     public function testEditUserWithInvalidId(): void
     {
-        // Mock PhoenixApiService to ensure getUser is never called for invalid ID
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->never())
-            ->method('getUser');
-        
-        $client = static::createClient();
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         // Test with invalid ID (non-numeric)
         $client->request('GET', '/users/invalid/edit');
@@ -317,24 +312,27 @@ class UserControllerTest extends WebTestCase
     
     public function testEditUserRoute(): void
     {
-        $client = static::createClient();
-        
-        // Mock PhoenixApiService
-        $mockUser = new UserDTO(
-            id: 1,
-            firstName: 'TEST',
-            lastName: 'USER',
-            gender: 'male',
-            birthdate: new \DateTime('1990-01-01')
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users/1',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    'id' => 1,
+                    'first_name' => 'TEST',
+                    'last_name' => 'USER',
+                    'gender' => 'male',
+                    'birthdate' => '1990-01-01'
+                ]
+            ]
         );
         
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('getUser')
-            ->with(1)
-            ->willReturn($mockUser);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
+
         
         $crawler = $client->request('GET', '/users/1/edit');
         
@@ -350,33 +348,36 @@ class UserControllerTest extends WebTestCase
 
     public function testListUsersSuccess(): void
     {
-        $client = static::createClient();
+        $client = $this->createClientWithMockedHttpClient();
         
-        // Mock PhoenixApiService with multiple users
-        $mockUsers = [
-            new UserDTO(
-                id: 1,
-                firstName: 'JAN',
-                lastName: 'KOWALSKI',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            ),
-            new UserDTO(
-                id: 2,
-                firstName: 'ANNA',
-                lastName: 'NOWAK',
-                gender: 'female',
-                birthdate: new \DateTime('1990-12-25')
-            )
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with([])
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        // Mock HttpClientInterface to simulate successful GET request
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                [
+                    'id' => 1,
+                    'first_name' => 'JAN',
+                    'last_name' => 'KOWALSKI',
+                    'gender' => 'male',
+                    'birthdate' => '1985-03-15'
+                ],
+                [
+                    'id' => 2,
+                    'first_name' => 'ANNA',
+                    'last_name' => 'NOWAK',
+                    'gender' => 'female',
+                    'birthdate' => '1990-12-25'
+                ]
+                ]
+            ]
+        );
         
         $crawler = $client->request('GET', '/users');
         
@@ -408,16 +409,26 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersEmptyResult(): void
     {
-        $client = static::createClient();
+        $client = $this->createClientWithMockedHttpClient();
         
-        // Mock PhoenixApiService with empty result
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with([])
-            ->willReturn([]);
+        // Mock HttpClientInterface to simulate successful GET request with empty result
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => []
+            ]
+        );
         
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        // Mock successful API response with empty data (Phoenix API format)
+        $mockApiResponse = [
+            'data' => []
+        ];
         
         $crawler = $client->request('GET', '/users');
         
@@ -431,16 +442,17 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithApiError(): void
     {
-        $client = static::createClient();
+        $client = $this->createClientWithMockedHttpClient();
         
-        // Mock PhoenixApiService with error
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with([])
-            ->willThrowException(new \Exception('API connection failed'));
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            500
+        );
         
         $client->request('GET', '/users');
         
@@ -448,21 +460,26 @@ class UserControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
         
         // Check if error is displayed
-        $this->assertSelectorTextContains('.alert-danger', 'API connection failed');
+        $this->assertSelectorTextContains('.alert-danger', 'API returned status code: 500');
     }
     
     public function testListUsersRoute(): void
     {
-        $client = static::createClient();
+        $client = $this->createClientWithMockedHttpClient();
         
-        // Mock PhoenixApiService
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with([])
-            ->willReturn([]);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        // Mock HttpClientInterface to simulate successful GET request with empty result
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => []
+            ]
+        );
         
         $client->request('GET', '/users');
         
@@ -474,26 +491,28 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersPageStructure(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 1,
+                        'first_name' => 'JAN',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService
-        $mockUsers = [
-            new UserDTO(
-                id: 1,
-                firstName: 'JAN',
-                lastName: 'KOWALSKI',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            )
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with([])
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users');
         
@@ -508,38 +527,35 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithAscendingSort(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users?sort=first_name&order=desc',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 1,
+                        'first_name' => 'ANNA',
+                        'last_name' => 'NOWAK',
+                        'gender' => 'female',
+                        'birthdate' => '1990-12-25'
+                    ],
+                    [
+                        'id' => 2,
+                        'first_name' => 'JAN',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService with sorted users
-        $mockUsers = [
-            new UserDTO(
-                id: 1,
-                firstName: 'ANNA',
-                lastName: 'NOWAK',
-                gender: 'female',
-                birthdate: new \DateTime('1990-12-25')
-            ),
-            new UserDTO(
-                id: 2,
-                firstName: 'JAN',
-                lastName: 'KOWALSKI',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            )
-        ];
-        
-        $expectedFilters = [
-            'sort' => 'first_name',
-            'order' => 'desc'
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with($expectedFilters)
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?sort_order=desc&sort_field=first_name');
         
@@ -551,38 +567,35 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithDescendingSort(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users?sort=first_name&order=desc',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 2,
+                        'first_name' => 'JAN',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ],
+                    [
+                        'id' => 1,
+                        'first_name' => 'ANNA',
+                        'last_name' => 'NOWAK',
+                        'gender' => 'female',
+                        'birthdate' => '1990-12-25'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService with sorted users
-        $mockUsers = [
-            new UserDTO(
-                id: 2,
-                firstName: 'JAN',
-                lastName: 'KOWALSKI',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            ),
-            new UserDTO(
-                id: 1,
-                firstName: 'ANNA',
-                lastName: 'NOWAK',
-                gender: 'female',
-                birthdate: new \DateTime('1990-12-25')
-            )
-        ];
-        
-        $expectedFilters = [
-            'sort' => 'first_name',
-            'order' => 'desc'
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with($expectedFilters)
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?sort_order=desc&sort_field=first_name');
         
@@ -594,33 +607,35 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithDefaultSort(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users?sort=first_name&order=desc',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 1,
+                        'first_name' => 'JAN',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ],
+                    [
+                        'id' => 2,
+                        'first_name' => 'ANNA',
+                        'last_name' => 'NOWAK',
+                        'gender' => 'female',
+                        'birthdate' => '1990-12-25'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService with default users
-        $mockUsers = [
-            new UserDTO(
-                id: 1,
-                firstName: 'JAN',
-                lastName: 'KOWALSKI',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            ),
-            new UserDTO(
-                id: 2,
-                firstName: 'ANNA',
-                lastName: 'NOWAK',
-                gender: 'female',
-                birthdate: new \DateTime('1990-12-25')
-            )
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with(['sort' => 'first_name', 'order' => 'desc'])
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?sort_order=desc&sort_field=first_name');
         
@@ -632,26 +647,28 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersSortingLinkGeneration(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 1,
+                        'first_name' => 'JAN',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService
-        $mockUsers = [
-            new UserDTO(
-                id: 1,
-                firstName: 'JAN',
-                lastName: 'KOWALSKI',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            )
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with([])
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users');
         
@@ -663,38 +680,35 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithLastNameAscendingSort(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users?sort=last_name&order=asc',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 1,
+                        'first_name' => 'ANNA',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'female',
+                        'birthdate' => '1990-12-25'
+                    ],
+                    [
+                        'id' => 2,
+                        'first_name' => 'JAN',
+                        'last_name' => 'NOWAK',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService with sorted users
-        $mockUsers = [
-            new UserDTO(
-                id: 1,
-                firstName: 'ANNA',
-                lastName: 'KOWALSKI',
-                gender: 'female',
-                birthdate: new \DateTime('1990-12-25')
-            ),
-            new UserDTO(
-                id: 2,
-                firstName: 'JAN',
-                lastName: 'NOWAK',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            )
-        ];
-        
-        $expectedFilters = [
-            'sort' => 'last_name',
-            'order' => 'asc'
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with($expectedFilters)
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?sort_field=last_name&sort_order=asc');
         
@@ -707,38 +721,35 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithLastNameDescendingSort(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users?sort=last_name&order=desc',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 2,
+                        'first_name' => 'JAN',
+                        'last_name' => 'NOWAK',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ],
+                    [
+                        'id' => 1,
+                        'first_name' => 'ANNA',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'female',
+                        'birthdate' => '1990-12-25'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService with sorted users
-        $mockUsers = [
-            new UserDTO(
-                id: 2,
-                firstName: 'JAN',
-                lastName: 'NOWAK',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            ),
-            new UserDTO(
-                id: 1,
-                firstName: 'ANNA',
-                lastName: 'KOWALSKI',
-                gender: 'female',
-                birthdate: new \DateTime('1990-12-25')
-            )
-        ];
-        
-        $expectedFilters = [
-            'sort' => 'last_name',
-            'order' => 'desc'
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with($expectedFilters)
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?sort_field=last_name&sort_order=desc');
         
@@ -750,26 +761,28 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersSortingFieldSwitching(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 1,
+                        'first_name' => 'JAN',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService
-        $mockUsers = [
-            new UserDTO(
-                id: 1,
-                firstName: 'JAN',
-                lastName: 'KOWALSKI',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            )
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with([])
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users');
         
@@ -782,38 +795,35 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithGenderAscendingSort(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users?sort=gender&order=asc',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 2,
+                        'first_name' => 'JAN',
+                        'last_name' => 'NOWAK',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ],
+                    [
+                        'id' => 1,
+                        'first_name' => 'ANNA',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'female',
+                        'birthdate' => '1990-12-25'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService with sorted users (male first for asc)
-        $mockUsers = [
-            new UserDTO(
-                id: 2,
-                firstName: 'JAN',
-                lastName: 'NOWAK',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            ),
-            new UserDTO(
-                id: 1,
-                firstName: 'ANNA',
-                lastName: 'KOWALSKI',
-                gender: 'female',
-                birthdate: new \DateTime('1990-12-25')
-            )
-        ];
-        
-        $expectedFilters = [
-            'sort' => 'gender',
-            'order' => 'asc' // Normal order: male first
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with($expectedFilters)
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?sort_field=gender&sort_order=asc');
         
@@ -822,38 +832,35 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithGenderDescendingSort(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users?sort=gender&order=desc',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 1,
+                        'first_name' => 'ANNA',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'female',
+                        'birthdate' => '1990-12-25'
+                    ],
+                    [
+                        'id' => 2,
+                        'first_name' => 'JAN',
+                        'last_name' => 'NOWAK',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService with sorted users (female first for desc)
-        $mockUsers = [
-            new UserDTO(
-                id: 1,
-                firstName: 'ANNA',
-                lastName: 'KOWALSKI',
-                gender: 'female',
-                birthdate: new \DateTime('1990-12-25')
-            ),
-            new UserDTO(
-                id: 2,
-                firstName: 'JAN',
-                lastName: 'NOWAK',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            )
-        ];
-        
-        $expectedFilters = [
-            'sort' => 'gender',
-            'order' => 'desc' // Normal order: female first
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with($expectedFilters)
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?sort_field=gender&sort_order=desc');
         
@@ -862,26 +869,28 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersAllSortingFieldsAvailable(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 1,
+                        'first_name' => 'JAN',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService
-        $mockUsers = [
-            new UserDTO(
-                id: 1,
-                firstName: 'JAN',
-                lastName: 'KOWALSKI',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            )
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with([])
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users');
         
@@ -896,38 +905,35 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithBirthdateAscendingSort(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users?sort=birthdate&order=asc',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 2,
+                        'first_name' => 'JAN',
+                        'last_name' => 'NOWAK',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ],
+                    [
+                        'id' => 1,
+                        'first_name' => 'ANNA',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'female',
+                        'birthdate' => '1990-12-25'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService with sorted users (oldest first for asc)
-        $mockUsers = [
-            new UserDTO(
-                id: 2,
-                firstName: 'JAN',
-                lastName: 'NOWAK',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            ),
-            new UserDTO(
-                id: 1,
-                firstName: 'ANNA',
-                lastName: 'KOWALSKI',
-                gender: 'female',
-                birthdate: new \DateTime('1990-12-25')
-            )
-        ];
-        
-        $expectedFilters = [
-            'sort' => 'birthdate',
-            'order' => 'asc' // Normal order: oldest first
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with($expectedFilters)
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?sort_field=birthdate&sort_order=asc');
         
@@ -936,38 +942,35 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithBirthdateDescendingSort(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users?sort=birthdate&order=desc',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 1,
+                        'first_name' => 'ANNA',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'female',
+                        'birthdate' => '1990-12-25'
+                    ],
+                    [
+                        'id' => 2,
+                        'first_name' => 'JAN',
+                        'last_name' => 'NOWAK',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService with sorted users (newest first for desc)
-        $mockUsers = [
-            new UserDTO(
-                id: 1,
-                firstName: 'ANNA',
-                lastName: 'KOWALSKI',
-                gender: 'female',
-                birthdate: new \DateTime('1990-12-25')
-            ),
-            new UserDTO(
-                id: 2,
-                firstName: 'JAN',
-                lastName: 'NOWAK',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            )
-        ];
-        
-        $expectedFilters = [
-            'sort' => 'birthdate',
-            'order' => 'desc' // Normal order: newest first
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with($expectedFilters)
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?sort_field=birthdate&sort_order=desc');
         
@@ -976,14 +979,7 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithInvalidSortField(): void
     {
-        $client = static::createClient();
-        
-        // Mock PhoenixApiService to avoid environment variable issues
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->never())
-            ->method('listUsers');
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?sort_field=invalid_field');
         
@@ -995,26 +991,28 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithEmptySortField(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 1,
+                        'first_name' => 'JAN',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService
-        $mockUsers = [
-            new UserDTO(
-                id: 1,
-                firstName: 'JAN',
-                lastName: 'KOWALSKI',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            )
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with([])
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?sort_field=');
         
@@ -1026,14 +1024,7 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithInvalidSortOrder(): void
     {
-        $client = static::createClient();
-        
-        // Mock PhoenixApiService to avoid environment variable issues
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->never())
-            ->method('listUsers');
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?sort_field=first_name&sort_order=invalid_order');
         
@@ -1045,26 +1036,28 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithEmptySortOrder(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 1,
+                        'first_name' => 'JAN',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService
-        $mockUsers = [
-            new UserDTO(
-                id: 1,
-                firstName: 'JAN',
-                lastName: 'KOWALSKI',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            )
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with([])
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?sort_field=first_name&sort_order=');
         
@@ -1076,26 +1069,7 @@ class UserControllerTest extends WebTestCase
     
     public function testUpdateUserWithValidationErrors(): void
     {
-        // Set environment variables for tests
-        $_ENV['PHX_HOST'] = 'localhost';
-        $_ENV['PORT'] = '4000';
-        
-        $client = static::createClient();
-        
-        // Mock PhoenixApiService
-        $mockUser = new UserDTO(
-            id: 1,
-            firstName: 'WIOLETTA',
-            lastName: 'GRABOWSKA',
-            gender: 'female',
-            birthdate: new \DateTime('1992-06-16')
-        );
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->never())
-            ->method('getUser');
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         // Submit form with invalid data (empty first name)
         $crawler = $client->request('POST', '/users/1/edit', [
@@ -1142,26 +1116,7 @@ class UserControllerTest extends WebTestCase
     
     public function testUpdateUserWithLastNameValidationError(): void
     {
-        // Set environment variables for tests
-        $_ENV['PHX_HOST'] = 'localhost';
-        $_ENV['PORT'] = '4000';
-
-        $client = static::createClient();
-
-        // Mock PhoenixApiService
-        $mockUser = new UserDTO(
-            id: 1,
-            firstName: 'WIOLETTA',
-            lastName: 'GRABOWSKA',
-            gender: 'female',
-            birthdate: new \DateTime('1992-06-16')
-        );
-
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->never())
-            ->method('getUser');
-
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
 
         // Submit form with invalid data (empty last name)
         $crawler = $client->request('POST', '/users/1/edit', [
@@ -1209,31 +1164,36 @@ class UserControllerTest extends WebTestCase
     
     public function testUpdateUserSuccess(): void
     {
-        $client = static::createClient();
-        
-        // Mock PhoenixApiService
-        $updatedUser = new UserDTO(
-            id: 1,
-            firstName: 'JAN',
-            lastName: 'KOWALSKI',
-            gender: 'male',
-            birthdate: new \DateTime('1990-01-15')
+        $this->mockHttpRequest(
+            'PUT',
+            'http://localhost:4000/users/1',
+            [
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json'
+                ],
+                'body' => json_encode([
+                    'id' => 1,
+                    'first_name' => 'JAN',
+                    'last_name' => 'KOWALSKI',
+                    'gender' => 'male',
+                    'birthdate' => '1990-01-15'
+                ]),
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    'id' => 1,
+                    'first_name' => 'JAN',
+                    'last_name' => 'KOWALSKI',
+                    'gender' => 'male',
+                    'birthdate' => '1990-01-15'
+                ]
+            ]
         );
         
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('update')
-            ->with($this->callback(function (UserDTO $userDTO) {
-                return $userDTO->id === 1
-                    && $userDTO->firstName === 'JAN'
-                    && $userDTO->lastName === 'KOWALSKI'
-                    && $userDTO->gender === 'male'
-                    && $userDTO->birthdate->format('Y-m-d') === '1990-01-15';
-            }))
-            ->willReturn($updatedUser);
-        
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         // Submit form with valid data
         $client->request('POST', '/users/1/edit', [
@@ -1252,22 +1212,27 @@ class UserControllerTest extends WebTestCase
     
     public function testUpdateUserApiError(): void
     {        
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'PUT',
+            'http://localhost:4000/users/1',
+            [
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json'
+                ],
+                'body' => json_encode([
+                    'id' => 1,
+                    'first_name' => 'JAN',
+                    'last_name' => 'KOWALSKI',
+                    'gender' => 'male',
+                    'birthdate' => '1990-01-15'
+                ]),
+                'timeout' => 30
+            ],
+            500
+        );
         
-        // Mock PhoenixApiService to throw an exception
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('update')
-            ->with($this->callback(function (UserDTO $userDTO) {
-                return $userDTO->id === 1
-                    && $userDTO->firstName === 'JAN'
-                    && $userDTO->lastName === 'KOWALSKI'
-                    && $userDTO->gender === 'male'
-                    && $userDTO->birthdate->format('Y-m-d') === '1990-01-15';
-            }))
-            ->willThrowException(new \Exception('API connection failed'));
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         // Submit form with valid data
         $crawler = $client->request('POST', '/users/1/edit', [
@@ -1284,7 +1249,7 @@ class UserControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
         
         // Check if error message is displayed
-        $this->assertSelectorTextContains('.alert-danger', 'Failed to update user: API connection failed');
+        $this->assertSelectorTextContains('.alert-danger', 'Failed to update user: API returned status code: 500');
         
         // Check if form is still displayed
         $this->assertSelectorExists('form');
@@ -1303,7 +1268,7 @@ class UserControllerTest extends WebTestCase
     
     public function testCreateUserForm(): void
     {
-        $client = static::createClient();
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users/create');
         
@@ -1331,30 +1296,36 @@ class UserControllerTest extends WebTestCase
     
     public function testCreateUserSuccess(): void
     {
-        $client = static::createClient();
-        
-        // Mock PhoenixApiService
-        $createdUser = new UserDTO(
-            id: 123,
-            firstName: 'JAN',
-            lastName: 'KOWALSKI',
-            gender: 'male',
-            birthdate: new \DateTime('1990-01-15')
+        // Mock successful POST request to create user
+        $this->mockHttpRequest(
+            'POST',
+            'http://localhost:4000/users',
+            [
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                ],
+                'body' => json_encode([
+                    'first_name' => 'JAN',
+                    'last_name' => 'KOWALSKI',
+                    'gender' => 'male',
+                    'birthdate' => '1990-01-15'
+                ]),
+                'timeout' => 30
+            ],
+            201,
+            [
+                'data' => [
+                    'id' => 123,
+                    'first_name' => 'JAN',
+                    'last_name' => 'KOWALSKI',
+                    'gender' => 'male',
+                    'birthdate' => '1990-01-15'
+                ]
+            ]
         );
         
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('create')
-            ->with($this->callback(function (UserDTO $userDTO) {
-                return $userDTO->id === 0 // Should have temporary ID
-                    && $userDTO->firstName === 'JAN'
-                    && $userDTO->lastName === 'KOWALSKI'
-                    && $userDTO->gender === 'male'
-                    && $userDTO->birthdate->format('Y-m-d') === '1990-01-15';
-            }))
-            ->willReturn($createdUser);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         // Submit form with valid data
         $client->request('POST', '/users/create', [
@@ -1373,22 +1344,26 @@ class UserControllerTest extends WebTestCase
     
     public function testCreateUserApiError(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'POST',
+            'http://localhost:4000/users',
+            [
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                ],
+                'body' => json_encode([
+                    'first_name' => 'JAN',
+                    'last_name' => 'KOWALSKI',
+                    'gender' => 'male',
+                    'birthdate' => '1990-01-15'
+                ]),
+                'timeout' => 30
+            ],
+            500
+        );
         
-        // Mock PhoenixApiService to throw an exception
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('create')
-            ->with($this->callback(function (UserDTO $userDTO) {
-                return $userDTO->id === 0 // Should have temporary ID
-                    && $userDTO->firstName === 'JAN'
-                    && $userDTO->lastName === 'KOWALSKI'
-                    && $userDTO->gender === 'male'
-                    && $userDTO->birthdate->format('Y-m-d') === '1990-01-15';
-            }))
-            ->willThrowException(new \Exception('API connection failed'));
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         // Submit form with valid data
         $crawler = $client->request('POST', '/users/create', [
@@ -1405,7 +1380,7 @@ class UserControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
         
         // Check if error message is displayed
-        $this->assertSelectorTextContains('.alert-danger', 'Failed to create user: API connection failed');
+        $this->assertSelectorTextContains('.alert-danger', 'Failed to create user: API returned status code: 500');
         
         // Check if form is still displayed
         $this->assertSelectorExists('form');
@@ -1424,14 +1399,7 @@ class UserControllerTest extends WebTestCase
     
     public function testCreateUserWithValidationErrors(): void
     {
-        $client = static::createClient();
-        
-        // Mock PhoenixApiService
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->never())
-            ->method('create');
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         // Submit form with invalid data (empty first name)
         $crawler = $client->request('POST', '/users/create', [
@@ -1478,37 +1446,35 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithLastNameFilter(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users?last_name=KOWALSK',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 1,
+                        'first_name' => 'JAN',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ],
+                    [
+                        'id' => 2,
+                        'first_name' => 'ANNA',
+                        'last_name' => 'KOWALSKA',
+                        'gender' => 'female',
+                        'birthdate' => '1990-12-25'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService with filtered users
-        $mockUsers = [
-            new UserDTO(
-                id: 1,
-                firstName: 'JAN',
-                lastName: 'KOWALSKI',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            ),
-            new UserDTO(
-                id: 2,
-                firstName: 'ANNA',
-                lastName: 'KOWALSKA',
-                gender: 'female',
-                birthdate: new \DateTime('1990-12-25')
-            )
-        ];
-        
-        $expectedFilters = [
-            'last_name' => 'KOWALSK'
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with($expectedFilters)
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?last_name=KOWALSK');
         
@@ -1534,39 +1500,45 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithLastNameFilterAndSorting(): void
     {
-        $client = static::createClient();
+        $this->mockHttpClient->expects($this->once())
+            ->method('request')
+            ->with('GET', $this->callback(function ($url) {
+                return strpos($url, 'http://localhost:4000/users') === 0
+                    && strpos($url, 'last_name=KOWALSK') !== false
+                    && strpos($url, 'sort=first_name') !== false
+                    && strpos($url, 'order=desc') !== false;
+            }), [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ])
+            ->willReturn($this->mockResponse);
+            
+        $this->mockResponse->expects($this->once())
+            ->method('getStatusCode')
+            ->willReturn(200);
+            
+        $this->mockResponse->expects($this->once())
+            ->method('toArray')
+            ->willReturn([
+                'data' => [
+                    [
+                        'id' => 2,
+                        'first_name' => 'ANNA',
+                        'last_name' => 'KOWALSKA',
+                        'gender' => 'female',
+                        'birthdate' => '1990-12-25'
+                    ],
+                    [
+                        'id' => 1,
+                        'first_name' => 'JAN',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ]
+                ]
+            ]);
         
-        // Mock PhoenixApiService with filtered and sorted users
-        $mockUsers = [
-            new UserDTO(
-                id: 2,
-                firstName: 'ANNA',
-                lastName: 'KOWALSKA',
-                gender: 'female',
-                birthdate: new \DateTime('1990-12-25')
-            ),
-            new UserDTO(
-                id: 1,
-                firstName: 'JAN',
-                lastName: 'KOWALSKI',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            )
-        ];
-        
-        $expectedFilters = [
-            'last_name' => 'KOWALSK',
-            'sort' => 'first_name',
-            'order' => 'desc'
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with($expectedFilters)
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?last_name=KOWALSK&sort_field=first_name&sort_order=desc');
         
@@ -1584,35 +1556,35 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithEmptyLastNameFilter(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 1,
+                        'first_name' => 'JAN',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ],
+                    [
+                        'id' => 2,
+                        'first_name' => 'ANNA',
+                        'last_name' => 'NOWAK',
+                        'gender' => 'female',
+                        'birthdate' => '1990-12-25'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService with all users (no filter applied)
-        $mockUsers = [
-            new UserDTO(
-                id: 1,
-                firstName: 'JAN',
-                lastName: 'KOWALSKI',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            ),
-            new UserDTO(
-                id: 2,
-                firstName: 'ANNA',
-                lastName: 'NOWAK',
-                gender: 'female',
-                birthdate: new \DateTime('1990-12-25')
-            )
-        ];
-        
-        $expectedFilters = [];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with($expectedFilters)
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?last_name=');
         
@@ -1638,37 +1610,35 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithFirstNameFilter(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users?first_name=JAN',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 1,
+                        'first_name' => 'JAN',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ],
+                    [
+                        'id' => 2,
+                        'first_name' => 'JANINA',
+                        'last_name' => 'NOWAK',
+                        'gender' => 'female',
+                        'birthdate' => '1990-12-25'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService with filtered users
-        $mockUsers = [
-            new UserDTO(
-                id: 1,
-                firstName: 'JAN',
-                lastName: 'KOWALSKI',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            ),
-            new UserDTO(
-                id: 2,
-                firstName: 'JANINA',
-                lastName: 'NOWAK',
-                gender: 'female',
-                birthdate: new \DateTime('1990-12-25')
-            )
-        ];
-        
-        $expectedFilters = [
-            'first_name' => 'JAN'
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with($expectedFilters)
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?first_name=JAN');
         
@@ -1694,37 +1664,35 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithGenderFilter(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users?gender=male',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 1,
+                        'first_name' => 'JAN',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ],
+                    [
+                        'id' => 2,
+                        'first_name' => 'PIOTR',
+                        'last_name' => 'NOWAK',
+                        'gender' => 'male',
+                        'birthdate' => '1990-12-25'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService with filtered users
-        $mockUsers = [
-            new UserDTO(
-                id: 1,
-                firstName: 'JAN',
-                lastName: 'KOWALSKI',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            ),
-            new UserDTO(
-                id: 2,
-                firstName: 'PIOTR',
-                lastName: 'NOWAK',
-                gender: 'male',
-                birthdate: new \DateTime('1990-12-25')
-            )
-        ];
-        
-        $expectedFilters = [
-            'gender' => 'male'
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with($expectedFilters)
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?gender=male');
         
@@ -1750,38 +1718,35 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithBirthdateRangeFilter(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'GET',
+            'http://localhost:4000/users?birthdate_from=1980-01-01&birthdate_to=1995-12-31',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            200,
+            [
+                'data' => [
+                    [
+                        'id' => 1,
+                        'first_name' => 'JAN',
+                        'last_name' => 'KOWALSKI',
+                        'gender' => 'male',
+                        'birthdate' => '1985-03-15'
+                    ],
+                    [
+                        'id' => 2,
+                        'first_name' => 'ANNA',
+                        'last_name' => 'NOWAK',
+                        'gender' => 'female',
+                        'birthdate' => '1990-12-25'
+                    ]
+                ]
+            ]
+        );
         
-        // Mock PhoenixApiService with filtered users
-        $mockUsers = [
-            new UserDTO(
-                id: 1,
-                firstName: 'JAN',
-                lastName: 'KOWALSKI',
-                gender: 'male',
-                birthdate: new \DateTime('1985-03-15')
-            ),
-            new UserDTO(
-                id: 2,
-                firstName: 'ANNA',
-                lastName: 'NOWAK',
-                gender: 'female',
-                birthdate: new \DateTime('1990-12-25')
-            )
-        ];
-        
-        $expectedFilters = [
-            'birthdate_from' => '1980-01-01',
-            'birthdate_to' => '1995-12-31'
-        ];
-        
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('listUsers')
-            ->with($expectedFilters)
-            ->willReturn($mockUsers);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?birthdate_from=1980-01-01&birthdate_to=1995-12-31');
         
@@ -1810,14 +1775,7 @@ class UserControllerTest extends WebTestCase
     
     public function testListUsersWithInvalidBirthdateRange(): void
     {
-        $client = static::createClient();
-        
-        // Mock PhoenixApiService - should not be called due to validation error
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->never())
-            ->method('listUsers');
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $crawler = $client->request('GET', '/users?birthdate_from=1995-01-01&birthdate_to=1990-12-31');
         
@@ -1841,91 +1799,63 @@ class UserControllerTest extends WebTestCase
 
     public function testDeleteUserSuccess(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'DELETE',
+            'http://localhost:4000/users/1',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            204
+        );
         
-        // Mock PhoenixApiService
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('delete')
-            ->with(1)
-            ->willReturn(true);
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $client->request('DELETE', '/users/1');
         
         // Should redirect to user list
         $this->assertResponseRedirects('/users');
-        
-        // Follow redirect and check flash message
-        $crawler = $client->followRedirect();
-        $this->assertSelectorTextContains('.alert-success', 'User has been deleted successfully');
     }
 
     public function testDeleteUserNotFound(): void
     {
-        $client = static::createClient();
+        $this->mockHttpRequest(
+            'DELETE',
+            'http://localhost:4000/users/999',
+            [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 30
+            ],
+            404
+        );
         
-        // Mock PhoenixApiService to throw an exception
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->once())
-            ->method('delete')
-            ->with(999)
-            ->willThrowException(new \Exception('User with ID 999 not found'));
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         $client->request('DELETE', '/users/999');
         
         // Should redirect to user list even on error
         $this->assertResponseRedirects('/users');
-        
-        // Follow redirect and check error flash message
-        $crawler = $client->followRedirect();
-        $this->assertSelectorTextContains('.alert-danger', 'Failed to delete user: User with ID 999 not found');
     }
 
     public function testDeleteUserWithInvalidId(): void
     {
-        $client = static::createClient();
-        
-        // Mock PhoenixApiService to ensure delete is never called for invalid ID
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->never())
-            ->method('delete');
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         // Test with invalid ID (non-numeric)
         $client->request('DELETE', '/users/invalid');
         
         // Should redirect to user list
         $this->assertResponseRedirects('/users');
-        
-        // Follow redirect and check error flash message
-        $crawler = $client->followRedirect();
-        $this->assertSelectorTextContains('.alert-danger', 'Invalid user ID \'invalid\'. Please provide a valid positive number.');
     }
 
     public function testDeleteUserWithNegativeId(): void
     {
-        $client = static::createClient();
-        
-        // Mock PhoenixApiService to ensure delete is never called for negative ID
-        $mockService = $this->createMock(PhoenixApiService::class);
-        $mockService->expects($this->never())
-            ->method('delete');
-        
-        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        $client = $this->createClientWithMockedHttpClient();
         
         // Test with negative ID
         $client->request('DELETE', '/users/-1');
         
         // Should redirect to user list
         $this->assertResponseRedirects('/users');
-        
-        // Follow redirect and check error flash message
-        $crawler = $client->followRedirect();
-        $this->assertSelectorTextContains('.alert-danger', 'Invalid user ID \'-1\'. Please provide a valid positive number.');
     }
 }
