@@ -6,9 +6,28 @@ Run `docker compose up -d` to run the application locally.
 
 ## Test
 
-If no local postgres is running - you may run `docker compose up -d db` before testing.
-Otherwise you may need to adjust db params in `config/test.exs`.
+### Quick Start (Testing)
+```bash
+# 1. Start up test database
+# Alternatively, adjust `phoenix-api/config/test.exs` to use existing db
+docker-compose -f docker-compose.test.yml up -d
 
-Run `mix test` to test the application.
+# 2. Run phoenix tests
+cd phoenix-api
+mix test
 
-Run `mix test.all` to execute all tests, including those that are resource-intensive or require an external connection. Use with caution, as these tests may be flaky.
+# 3. Some of the tests are disabled by default. They may require external internet connection or have risk of being false negative.
+# They shouldn't be used in CI, but you may run it manually using:
+mix test.all
+
+# 4. Run Syfony tests
+cd ../symfony-app
+composer test
+```
+
+### Test Environment Configuration
+
+- **Testing**: Uses `.env.test` and `docker-compose.test.yml`
+  - PostgreSQL database only
+  - Isolated test environment
+  - Fast startup and shutdown
