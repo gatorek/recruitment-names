@@ -15,6 +15,8 @@ defmodule PhoenixApiWeb.UsersControllerTest do
   @female_first_name_url "https://api.dane.gov.pl/media/resources/20250124/8_-_Wykaz_imion_%C5%BCe%C5%84skich__os%C3%B3b_%C5%BCyj%C4%85cych_wg_pola_imi%C4%99_pierwsze_wyst%C4%99puj%C4%85cych_w_rejestrze_PESEL_bez_zgon%C3%B3w.csv"
   @female_last_name_url "https://api.dane.gov.pl/media/resources/20250123/nazwiska_%C5%BCe%C5%84skie-osoby_%C5%BCyj%C4%85ce_efby1gw.csv"
 
+  @test_api_token "test-api-token-12345"
+
   setup do
     # Copy modules for Mimic
     Mimic.copy(Users)
@@ -59,7 +61,10 @@ defmodule PhoenixApiWeb.UsersControllerTest do
       end)
 
       # Make the request
-      conn = post(conn, ~p"/import")
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{@test_api_token}")
+        |> post(~p"/import")
 
       # Assert response
       assert %{"count" => count} = json_response(conn, 200)
@@ -77,7 +82,10 @@ defmodule PhoenixApiWeb.UsersControllerTest do
       end)
 
       # Make the request
-      conn = post(conn, ~p"/import")
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{@test_api_token}")
+        |> post(~p"/import")
 
       # Assert error response
       assert %{"error" => "Network timeout"} = json_response(conn, 500)
@@ -90,7 +98,10 @@ defmodule PhoenixApiWeb.UsersControllerTest do
       end)
 
       # Make the request
-      conn = post(conn, ~p"/import")
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{@test_api_token}")
+        |> post(~p"/import")
 
       # Assert error response
       assert %{"error" => "Connection timeout"} = json_response(conn, 500)
@@ -119,7 +130,9 @@ defmodule PhoenixApiWeb.UsersControllerTest do
 
       # Make the request with parameters (should be ignored)
       conn =
-        post(conn, ~p"/import", %{
+        conn
+        |> put_req_header("authorization", "Bearer #{@test_api_token}")
+        |> post(~p"/import", %{
           "count" => 5,
           "birth_date_from" => "1990-01-01",
           "birth_date_to" => "2000-12-31"
@@ -156,7 +169,10 @@ defmodule PhoenixApiWeb.UsersControllerTest do
       end)
 
       # Make the request
-      conn = post(conn, ~p"/import")
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{@test_api_token}")
+        |> post(~p"/import")
 
       # Assert content type
       assert get_resp_header(conn, "content-type") == ["application/json; charset=utf-8"]
@@ -184,7 +200,10 @@ defmodule PhoenixApiWeb.UsersControllerTest do
       # Clean up users before test
       Repo.delete_all(UserSchema)
 
-      conn = post(conn, ~p"/import", params)
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{@test_api_token}")
+        |> post(~p"/import", params)
 
       assert %{"count" => count} = json_response(conn, 200)
       assert count == 100
@@ -200,6 +219,35 @@ defmodule PhoenixApiWeb.UsersControllerTest do
         assert user.gender in [:male, :female]
         assert %Date{} = user.birthdate
       end
+    end
+
+    test "rejects access without API token", %{conn: conn} do
+      conn = post(conn, "/import")
+
+      assert response(conn, 401)
+      assert %{"error" => "Missing Authorization header"} = json_response(conn, 401)
+    end
+
+    test "rejects access with invalid API token", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer invalid-token")
+        |> post("/import")
+
+      assert response(conn, 401)
+      assert %{"error" => "Invalid API token"} = json_response(conn, 401)
+    end
+
+    test "rejects access with malformed authorization header", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("authorization", "InvalidFormat")
+        |> post("/import")
+
+      assert response(conn, 401)
+
+      assert %{"error" => "Invalid Authorization header format. Use: Bearer <token>"} =
+               json_response(conn, 401)
     end
   end
 

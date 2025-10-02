@@ -8,7 +8,7 @@ import Config
 # The block below contains prod specific runtime configuration.
 
 # Person module URLs configuration
-if config_env() == :prod do
+if config_env() != :test do
   # Require environment variables for prod environment
   config :phoenix_api, :person,
     male_first_name_url:
@@ -84,6 +84,16 @@ if config_env() == :prod do
       port: port
     ],
     secret_key_base: secret_key_base
+
+  # API Token configuration
+  api_token =
+    System.get_env("API_TOKEN") ||
+      raise """
+      environment variable API_TOKEN is missing.
+      Generate a secure token for API authentication.
+      """
+
+  config :phoenix_api, :api_token, api_token
 
   # ## SSL Support
   #

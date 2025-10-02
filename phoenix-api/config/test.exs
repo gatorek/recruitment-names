@@ -25,3 +25,29 @@ config :logger, level: :warning
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
+
+# API Token for testing
+config :phoenix_api, :api_token, "test-api-token-12345"
+
+# Person module URLs configuration for testing
+config :phoenix_api, :person,
+  male_first_name_url:
+    System.get_env(
+      "MALE_FIRST_NAME_URL",
+      "https://api.dane.gov.pl/media/resources/20250124/8_-_Wykaz_imion_m%C4%99skich_os%C3%B3b_%C5%BCyj%C4%85cych_wg_pola_imi%C4%99_pierwsze_wyst%C4%99puj%C4%85cych_w_rejestrze_PESEL_bez_zgon%C3%B3w.csv"
+    ),
+  male_last_name_url:
+    System.get_env(
+      "MALE_LAST_NAME_URL",
+      "https://api.dane.gov.pl/media/resources/20250123/nazwiska_m%C4%99skie-osoby_%C5%BCyj%C4%85ce.csv"
+    ),
+  female_first_name_url:
+    System.get_env(
+      "FEMALE_FIRST_NAME_URL",
+      "https://api.dane.gov.pl/media/resources/20250124/8_-_Wykaz_imion_%C5%BCe%C5%84skich__os%C3%B3b_%C5%BCyj%C4%85cych_wg_pola_imi%C4%99_pierwsze_wyst%C4%99puj%C4%85cych_w_rejestrze_PESEL_bez_zgon%C3%B3w.csv"
+    ),
+  female_last_name_url:
+    System.get_env(
+      "FEMALE_LAST_NAME_URL",
+      "https://api.dane.gov.pl/media/resources/20250123/nazwiska_%C5%BCe%C5%84skie-osoby_%C5%BCyj%C4%85ce_efby1gw.csv"
+    )
