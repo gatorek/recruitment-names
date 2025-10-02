@@ -399,6 +399,7 @@ class UserControllerTest extends WebTestCase
         $this->assertSelectorExists('form[method="GET"]');
         $this->assertSelectorExists('input[name="first_name"]');
         $this->assertSelectorExists('input[name="last_name"]');
+        $this->assertSelectorExists('select[name="gender"]');
         $this->assertSelectorExists('button[type="submit"]');
         $this->assertSelectorTextContains('button[type="submit"]', 'Filter');
     }
@@ -1683,6 +1684,62 @@ class UserControllerTest extends WebTestCase
         // Check if filter form is displayed with pre-filled value
         $firstNameInput = $crawler->filter('input[name="first_name"]');
         $this->assertEquals('JAN', $firstNameInput->attr('value'));
+        
+        // Check if "Clear Filter" button is displayed when filter is active
+        $this->assertSelectorExists('a[href*="/users"]');
+        $this->assertSelectorTextContains('a[href*="/users"]', 'Clear Filter');
+    }
+    
+    public function testListUsersWithGenderFilter(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with filtered users
+        $mockUsers = [
+            new UserDTO(
+                id: 1,
+                firstName: 'JAN',
+                lastName: 'KOWALSKI',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            ),
+            new UserDTO(
+                id: 2,
+                firstName: 'PIOTR',
+                lastName: 'NOWAK',
+                gender: 'male',
+                birthdate: new \DateTime('1990-12-25')
+            )
+        ];
+        
+        $expectedFilters = [
+            'gender' => 'male'
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with($expectedFilters)
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?gender=male');
+        
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        
+        // Check if users are displayed
+        $this->assertSelectorTextContains('h1', 'Users List');
+        $this->assertSelectorTextContains('h5', 'Found 2 users');
+        
+        // Check if both users with matching gender are displayed
+        $this->assertSelectorTextContains('body', 'JAN KOWALSKI');
+        $this->assertSelectorTextContains('body', 'PIOTR NOWAK');
+        
+        // Check if filter form is displayed with pre-filled value
+        $genderSelect = $crawler->filter('select[name="gender"]');
+        $this->assertCount(1, $genderSelect->filter('option[value="male"][selected]'));
         
         // Check if "Clear Filter" button is displayed when filter is active
         $this->assertSelectorExists('a[href*="/users"]');

@@ -193,6 +193,7 @@ class UserController extends AbstractController
             $sortOrder = $this->getSortOrder($request);
             $lastName = $this->getLastNameFilter($request);
             $firstName = $this->getFirstNameFilter($request);
+            $gender = $this->getGenderFilter($request);
             $filters = [];
             
             if ($sortOrder && $sortField) {
@@ -208,6 +209,10 @@ class UserController extends AbstractController
                 $filters['first_name'] = $firstName;
             }
             
+            if ($gender !== null) {
+                $filters['gender'] = $gender;
+            }
+            
             $users = $this->phoenixApiService->listUsers($filters);
             
             return $this->render('user/list.html.twig', [
@@ -215,7 +220,8 @@ class UserController extends AbstractController
                 'currentSort' => $sortOrder,
                 'currentSortField' => $sortField,
                 'currentLastNameFilter' => $lastName,
-                'currentFirstNameFilter' => $firstName
+                'currentFirstNameFilter' => $firstName,
+                'currentGenderFilter' => $gender
             ]);
             
         } catch (\InvalidArgumentException $e) {
@@ -227,6 +233,7 @@ class UserController extends AbstractController
                 'currentSortField' => null,
                 'currentLastNameFilter' => null,
                 'currentFirstNameFilter' => null,
+                'currentGenderFilter' => null,
                 'error' => $e->getMessage()
             ]);
         } catch (\Exception $e) {
@@ -238,6 +245,7 @@ class UserController extends AbstractController
                 'currentSortField' => 'first_name',
                 'currentLastNameFilter' => null,
                 'currentFirstNameFilter' => null,
+                'currentGenderFilter' => null,
                 'error' => $e->getMessage()
             ]);
         }
@@ -352,6 +360,30 @@ class UserController extends AbstractController
         }
         
         return $firstName;
+    }
+
+    /**
+     * Retrieves the gender filter parameter
+     *
+     * @param Request $request The HTTP request
+     * @return string|null The gender filter or null if not provided or empty
+     */
+    private function getGenderFilter(Request $request): ?string
+    {
+        $gender = $request->query->get('gender');
+        
+        // If null or empty string, return null
+        if ($gender === null || $gender === '') {
+            return null;
+        }
+        
+        // Validate gender value
+        $validGenders = ['male', 'female'];
+        if (!in_array($gender, $validGenders, true)) {
+            return null;
+        }
+        
+        return $gender;
     }
 
 }
