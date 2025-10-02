@@ -192,6 +192,7 @@ class UserController extends AbstractController
             $sortField = $this->getSortField($request);
             $sortOrder = $this->getSortOrder($request);
             $lastName = $this->getLastNameFilter($request);
+            $firstName = $this->getFirstNameFilter($request);
             $filters = [];
             
             if ($sortOrder && $sortField) {
@@ -203,13 +204,18 @@ class UserController extends AbstractController
                 $filters['last_name'] = $lastName;
             }
             
+            if ($firstName !== null) {
+                $filters['first_name'] = $firstName;
+            }
+            
             $users = $this->phoenixApiService->listUsers($filters);
             
             return $this->render('user/list.html.twig', [
                 'users' => $users,
                 'currentSort' => $sortOrder,
                 'currentSortField' => $sortField,
-                'currentLastNameFilter' => $lastName
+                'currentLastNameFilter' => $lastName,
+                'currentFirstNameFilter' => $firstName
             ]);
             
         } catch (\InvalidArgumentException $e) {
@@ -220,6 +226,7 @@ class UserController extends AbstractController
                 'currentSort' => null,
                 'currentSortField' => null,
                 'currentLastNameFilter' => null,
+                'currentFirstNameFilter' => null,
                 'error' => $e->getMessage()
             ]);
         } catch (\Exception $e) {
@@ -230,6 +237,7 @@ class UserController extends AbstractController
                 'currentSort' => null,
                 'currentSortField' => 'first_name',
                 'currentLastNameFilter' => null,
+                'currentFirstNameFilter' => null,
                 'error' => $e->getMessage()
             ]);
         }
@@ -326,6 +334,24 @@ class UserController extends AbstractController
         }
         
         return $lastName;
+    }
+
+    /**
+     * Retrieves the first_name filter parameter
+     *
+     * @param Request $request The HTTP request
+     * @return string|null The first_name filter or null if not provided or empty
+     */
+    private function getFirstNameFilter(Request $request): ?string
+    {
+        $firstName = $request->query->get('first_name');
+        
+        // If null or empty string, return null
+        if ($firstName === null || $firstName === '') {
+            return null;
+        }
+        
+        return $firstName;
     }
 
 }

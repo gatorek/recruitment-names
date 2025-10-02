@@ -36,7 +36,16 @@
                                             <i class="bi bi-funnel"></i> Filter Users
                                         </h6>
                                         <form method="GET" action="{{ path('user_list') }}" class="row g-3">
-                                            <div class="col-md-4">
+                                            <div class="col-md-3">
+                                                <label for="first_name" class="form-label">First Name</label>
+                                                <input type="text" 
+                                                       class="form-control" 
+                                                       id="first_name" 
+                                                       name="first_name" 
+                                                       value="{{ currentFirstNameFilter ?? '' }}" 
+                                                       placeholder="Enter first name to filter...">
+                                            </div>
+                                            <div class="col-md-3">
                                                 <label for="last_name" class="form-label">Last Name</label>
                                                 <input type="text" 
                                                        class="form-control" 
@@ -49,7 +58,7 @@
                                                 <button type="submit" class="btn btn-primary me-2">
                                                     <i class="bi bi-search"></i> Filter
                                                 </button>
-                                                {% if currentLastNameFilter %}
+                                                {% if currentFirstNameFilter or currentLastNameFilter %}
                                                     <a href="{{ path('user_list', currentSortField or currentSort ? {'sort_field': currentSortField, 'sort_order': currentSort} : {}) }}" class="btn btn-outline-secondary">
                                                         <i class="bi bi-x-circle"></i> Clear Filter
                                                     </a>
@@ -87,7 +96,7 @@
                                             <thead class="table-dark">
                                                 <tr>
                                                     <th scope="col">
-                                                        <a href="{{ path('user_list', {'sort_field': 'first_name', 'sort_order': currentSortField == 'first_name' and currentSort == null ? 'asc' : (currentSortField == 'first_name' and currentSort == 'asc' ? 'desc' : (currentSortField == 'first_name' and currentSort == 'desc' ? '' : 'asc'))} | merge(currentLastNameFilter ? {'last_name': currentLastNameFilter} : {})) }}" 
+                                                        <a href="{{ path('user_list', {'sort_field': 'first_name', 'sort_order': currentSortField == 'first_name' and currentSort == null ? 'asc' : (currentSortField == 'first_name' and currentSort == 'asc' ? 'desc' : (currentSortField == 'first_name' and currentSort == 'desc' ? '' : 'asc'))} | merge(currentFirstNameFilter ? {'first_name': currentFirstNameFilter} : {}) | merge(currentLastNameFilter ? {'last_name': currentLastNameFilter} : {})) }}" 
                                                            class="text-white text-decoration-none d-flex align-items-center">
                                                             {% if currentSortField == 'first_name' and currentSort == 'asc' %}
                                                                 <i class="bi bi-triangle-fill me-2"></i>
@@ -98,7 +107,7 @@
                                                         </a>
                                                     </th>
                                                     <th scope="col">
-                                                        <a href="{{ path('user_list', {'sort_field': 'last_name', 'sort_order': currentSortField == 'last_name' and currentSort == null ? 'asc' : (currentSortField == 'last_name' and currentSort == 'asc' ? 'desc' : (currentSortField == 'last_name' and currentSort == 'desc' ? '' : 'asc'))} | merge(currentLastNameFilter ? {'last_name': currentLastNameFilter} : {})) }}" 
+                                                        <a href="{{ path('user_list', {'sort_field': 'last_name', 'sort_order': currentSortField == 'last_name' and currentSort == null ? 'asc' : (currentSortField == 'last_name' and currentSort == 'asc' ? 'desc' : (currentSortField == 'last_name' and currentSort == 'desc' ? '' : 'asc'))} | merge(currentFirstNameFilter ? {'first_name': currentFirstNameFilter} : {}) | merge(currentLastNameFilter ? {'last_name': currentLastNameFilter} : {})) }}" 
                                                            class="text-white text-decoration-none d-flex align-items-center">
                                                             {% if currentSortField == 'last_name' and currentSort == 'asc' %}
                                                                 <i class="bi bi-triangle-fill me-2"></i>
@@ -109,7 +118,7 @@
                                                         </a>
                                                     </th>
                                                     <th scope="col">
-                                                        <a href="{{ path('user_list', {'sort_field': 'gender', 'sort_order': currentSortField == 'gender' and currentSort == null ? 'asc' : (currentSortField == 'gender' and currentSort == 'asc' ? 'desc' : (currentSortField == 'gender' and currentSort == 'desc' ? '' : 'asc'))} | merge(currentLastNameFilter ? {'last_name': currentLastNameFilter} : {})) }}" 
+                                                        <a href="{{ path('user_list', {'sort_field': 'gender', 'sort_order': currentSortField == 'gender' and currentSort == null ? 'asc' : (currentSortField == 'gender' and currentSort == 'asc' ? 'desc' : (currentSortField == 'gender' and currentSort == 'desc' ? '' : 'asc'))} | merge(currentFirstNameFilter ? {'first_name': currentFirstNameFilter} : {}) | merge(currentLastNameFilter ? {'last_name': currentLastNameFilter} : {})) }}" 
                                                            class="text-white text-decoration-none d-flex align-items-center">
                                                             {% if currentSortField == 'gender' and currentSort == 'asc' %}
                                                                 <i class="bi bi-triangle-fill me-2"></i>
@@ -120,7 +129,7 @@
                                                         </a>
                                                     </th>
                                                     <th scope="col">
-                                                        <a href="{{ path('user_list', {'sort_field': 'birthdate', 'sort_order': currentSortField == 'birthdate' and currentSort == null ? 'asc' : (currentSortField == 'birthdate' and currentSort == 'asc' ? 'desc' : (currentSortField == 'birthdate' and currentSort == 'desc' ? '' : 'asc'))} | merge(currentLastNameFilter ? {'last_name': currentLastNameFilter} : {})) }}" 
+                                                        <a href="{{ path('user_list', {'sort_field': 'birthdate', 'sort_order': currentSortField == 'birthdate' and currentSort == null ? 'asc' : (currentSortField == 'birthdate' and currentSort == 'asc' ? 'desc' : (currentSortField == 'birthdate' and currentSort == 'desc' ? '' : 'asc'))} | merge(currentFirstNameFilter ? {'first_name': currentFirstNameFilter} : {}) | merge(currentLastNameFilter ? {'last_name': currentLastNameFilter} : {})) }}" 
                                                            class="text-white text-decoration-none d-flex align-items-center">
                                                             {% if currentSortField == 'birthdate' and currentSort == 'asc' %}
                                                                 <i class="bi bi-triangle-fill me-2"></i>

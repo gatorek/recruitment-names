@@ -397,6 +397,7 @@ class UserControllerTest extends WebTestCase
         
         // Check if filter form is displayed
         $this->assertSelectorExists('form[method="GET"]');
+        $this->assertSelectorExists('input[name="first_name"]');
         $this->assertSelectorExists('input[name="last_name"]');
         $this->assertSelectorExists('button[type="submit"]');
         $this->assertSelectorTextContains('button[type="submit"]', 'Filter');
@@ -1630,5 +1631,61 @@ class UserControllerTest extends WebTestCase
         // Check if "Clear Filter" button is NOT displayed when no filter is active
         $clearFilterLinks = $crawler->filter('a:contains("Clear Filter")');
         $this->assertCount(0, $clearFilterLinks);
+    }
+    
+    public function testListUsersWithFirstNameFilter(): void
+    {
+        $client = static::createClient();
+        
+        // Mock PhoenixApiService with filtered users
+        $mockUsers = [
+            new UserDTO(
+                id: 1,
+                firstName: 'JAN',
+                lastName: 'KOWALSKI',
+                gender: 'male',
+                birthdate: new \DateTime('1985-03-15')
+            ),
+            new UserDTO(
+                id: 2,
+                firstName: 'JANINA',
+                lastName: 'NOWAK',
+                gender: 'female',
+                birthdate: new \DateTime('1990-12-25')
+            )
+        ];
+        
+        $expectedFilters = [
+            'first_name' => 'JAN'
+        ];
+        
+        $mockService = $this->createMock(PhoenixApiService::class);
+        $mockService->expects($this->once())
+            ->method('listUsers')
+            ->with($expectedFilters)
+            ->willReturn($mockUsers);
+        
+        $client->getContainer()->set('App\Service\PhoenixApiService', $mockService);
+        
+        $crawler = $client->request('GET', '/users?first_name=JAN');
+        
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        
+        // Check if users are displayed
+        $this->assertSelectorTextContains('h1', 'Users List');
+        $this->assertSelectorTextContains('h5', 'Found 2 users');
+        
+        // Check if both users with matching first name are displayed
+        $this->assertSelectorTextContains('body', 'JAN KOWALSKI');
+        $this->assertSelectorTextContains('body', 'JANINA NOWAK');
+        
+        // Check if filter form is displayed with pre-filled value
+        $firstNameInput = $crawler->filter('input[name="first_name"]');
+        $this->assertEquals('JAN', $firstNameInput->attr('value'));
+        
+        // Check if "Clear Filter" button is displayed when filter is active
+        $this->assertSelectorExists('a[href*="/users"]');
+        $this->assertSelectorTextContains('a[href*="/users"]', 'Clear Filter');
     }
 }
