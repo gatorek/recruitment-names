@@ -57,6 +57,9 @@ class UserCreateType extends AbstractType
                 'label' => 'Birth Date',
                 'mapped' => false,
                 'widget' => 'single_text',
+                'constraints' => [
+                    new NotBlank(['message' => 'Birth date cannot be blank'])
+                ],
                 'attr' => [
                     'class' => 'form-control'
                 ]

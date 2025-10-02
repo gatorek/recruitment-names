@@ -1443,6 +1443,58 @@ class UserControllerTest extends WebTestCase
         $lastNameField = $crawler->filter('input[name="user_create[lastName]"]');
         $this->assertStringNotContainsString('is-invalid', $lastNameField->attr('class') ?? '', 'Last name field should not have is-invalid class');
     }
+        
+    public function testCreateUserWithEmptyBirthdate(): void
+    {
+        $client = $this->createClientWithMockedHttpClient();
+        
+        // Submit form with empty birthdate
+        $crawler = $client->request('POST', '/users/create', [
+            'user_create' => [
+                'firstName' => 'JAN',
+                'lastName' => 'KOWALSKI',
+                'gender' => 'male',
+                'birthdate' => '', // Empty birthdate - should cause validation error
+                'save' => ''
+            ]
+        ]);
+        
+        // Should render the form directly with validation errors (no redirect)
+        $this->assertResponseIsSuccessful();
+        
+        // Check if error message is displayed
+        $this->assertSelectorTextContains('.alert-danger', 'Please correct the errors below.');
+        
+        // Check if form is displayed with validation errors
+        $this->assertSelectorExists('form');
+        $this->assertSelectorTextContains('.card-title', 'Create New User');
+        
+        // Check if form fields contain the submitted data (even with errors)
+        $firstNameField = $crawler->filter('input[name="user_create[firstName]"]');
+        $this->assertEquals('JAN', $firstNameField->attr('value')); // Valid data preserved
+        
+        $lastNameField = $crawler->filter('input[name="user_create[lastName]"]');
+        $this->assertEquals('KOWALSKI', $lastNameField->attr('value')); // Valid data preserved
+        
+        $birthdateField = $crawler->filter('input[name="user_create[birthdate]"]');
+        $this->assertEquals('', $birthdateField->attr('value')); // Empty value preserved
+        
+        // Check if birthdate field with validation error is properly marked
+        $this->assertSelectorExists('input[name="user_create[birthdate]"][class*="is-invalid"]', 'Birthdate field should have is-invalid class');
+        $this->assertSelectorExists('.invalid-feedback', 'Should have validation error messages');
+        
+        // Check if validation error message is displayed for birthdate field
+        $birthdateError = $crawler->filter('input[name="user_create[birthdate]"]')->closest('.form-group')->filter('.invalid-feedback');
+        $this->assertGreaterThan(0, $birthdateError->count(), 'Birthdate field should have validation error message');
+        
+        // Check if firstName field (which is valid) doesn't have error styling
+        $firstNameField = $crawler->filter('input[name="user_create[firstName]"]');
+        $this->assertStringNotContainsString('is-invalid', $firstNameField->attr('class') ?? '', 'First name field should not have is-invalid class');
+        
+        // Check if lastName field (which is valid) doesn't have error styling
+        $lastNameField = $crawler->filter('input[name="user_create[lastName]"]');
+        $this->assertStringNotContainsString('is-invalid', $lastNameField->attr('class') ?? '', 'Last name field should not have is-invalid class');
+    }
     
     public function testListUsersWithLastNameFilter(): void
     {
