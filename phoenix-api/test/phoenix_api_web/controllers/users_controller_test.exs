@@ -173,8 +173,10 @@ defmodule PhoenixApiWeb.UsersControllerTest do
             "last_name" => "https://data.gov.pl/sites/default/files/nazwiska_m%C4%99skie.csv"
           },
           "female" => %{
-            "first_name" => "https://data.gov.pl/sites/default/files/imi%C4%99a_%C5%BCe%C5%84skie.csv",
-            "last_name" => "https://data.gov.pl/sites/default/files/nazwiska_%C5%BCe%C5%84skie.csv"
+            "first_name" =>
+              "https://data.gov.pl/sites/default/files/imi%C4%99a_%C5%BCe%C5%84skie.csv",
+            "last_name" =>
+              "https://data.gov.pl/sites/default/files/nazwiska_%C5%BCe%C5%84skie.csv"
           }
         }
       }
