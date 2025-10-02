@@ -194,6 +194,8 @@ class UserController extends AbstractController
             $lastName = $this->getLastNameFilter($request);
             $firstName = $this->getFirstNameFilter($request);
             $gender = $this->getGenderFilter($request);
+            $birthdateFrom = $this->getBirthdateFromFilter($request);
+            $birthdateTo = $this->getBirthdateToFilter($request);
             $filters = [];
             
             if ($sortOrder && $sortField) {
@@ -213,6 +215,32 @@ class UserController extends AbstractController
                 $filters['gender'] = $gender;
             }
             
+            // Validate birthdate range
+            if ($birthdateFrom !== null && $birthdateTo !== null) {
+                if ($birthdateFrom > $birthdateTo) {
+                    $this->addFlash('error', 'Birthdate "from" cannot be greater than birthdate "to".');
+                    
+                    return $this->render('user/list.html.twig', [
+                        'users' => [],
+                        'currentSort' => $sortOrder,
+                        'currentSortField' => $sortField,
+                        'currentLastNameFilter' => $lastName,
+                        'currentFirstNameFilter' => $firstName,
+                        'currentGenderFilter' => $gender,
+                        'currentBirthdateFromFilter' => $birthdateFrom,
+                        'currentBirthdateToFilter' => $birthdateTo
+                    ]);
+                }
+            }
+            
+            if ($birthdateFrom !== null) {
+                $filters['birthdate_from'] = $birthdateFrom;
+            }
+            
+            if ($birthdateTo !== null) {
+                $filters['birthdate_to'] = $birthdateTo;
+            }
+            
             $users = $this->phoenixApiService->listUsers($filters);
             
             return $this->render('user/list.html.twig', [
@@ -221,7 +249,9 @@ class UserController extends AbstractController
                 'currentSortField' => $sortField,
                 'currentLastNameFilter' => $lastName,
                 'currentFirstNameFilter' => $firstName,
-                'currentGenderFilter' => $gender
+                'currentGenderFilter' => $gender,
+                'currentBirthdateFromFilter' => $birthdateFrom,
+                'currentBirthdateToFilter' => $birthdateTo
             ]);
             
         } catch (\InvalidArgumentException $e) {
@@ -234,6 +264,8 @@ class UserController extends AbstractController
                 'currentLastNameFilter' => null,
                 'currentFirstNameFilter' => null,
                 'currentGenderFilter' => null,
+                'currentBirthdateFromFilter' => null,
+                'currentBirthdateToFilter' => null,
                 'error' => $e->getMessage()
             ]);
         } catch (\Exception $e) {
@@ -246,6 +278,8 @@ class UserController extends AbstractController
                 'currentLastNameFilter' => null,
                 'currentFirstNameFilter' => null,
                 'currentGenderFilter' => null,
+                'currentBirthdateFromFilter' => null,
+                'currentBirthdateToFilter' => null,
                 'error' => $e->getMessage()
             ]);
         }
@@ -384,6 +418,52 @@ class UserController extends AbstractController
         }
         
         return $gender;
+    }
+
+    /**
+     * Retrieves the birthdate_from filter parameter
+     *
+     * @param Request $request The HTTP request
+     * @return string|null The birthdate_from filter or null if not provided or empty
+     */
+    private function getBirthdateFromFilter(Request $request): ?string
+    {
+        $birthdateFrom = $request->query->get('birthdate_from');
+        
+        // If null or empty string, return null
+        if ($birthdateFrom === null || $birthdateFrom === '') {
+            return null;
+        }
+        
+        // Validate date format (YYYY-MM-DD)
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthdateFrom)) {
+            return null;
+        }
+        
+        return $birthdateFrom;
+    }
+
+    /**
+     * Retrieves the birthdate_to filter parameter
+     *
+     * @param Request $request The HTTP request
+     * @return string|null The birthdate_to filter or null if not provided or empty
+     */
+    private function getBirthdateToFilter(Request $request): ?string
+    {
+        $birthdateTo = $request->query->get('birthdate_to');
+        
+        // If null or empty string, return null
+        if ($birthdateTo === null || $birthdateTo === '') {
+            return null;
+        }
+        
+        // Validate date format (YYYY-MM-DD)
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthdateTo)) {
+            return null;
+        }
+        
+        return $birthdateTo;
     }
 
 }
