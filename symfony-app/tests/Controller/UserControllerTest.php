@@ -394,6 +394,12 @@ class UserControllerTest extends WebTestCase
         // Check if view details links exist
         $this->assertSelectorExists('a[href="/users/1"]');
         $this->assertSelectorExists('a[href="/users/2"]');
+        
+        // Check if filter form is displayed
+        $this->assertSelectorExists('form[method="GET"]');
+        $this->assertSelectorExists('input[name="last_name"]');
+        $this->assertSelectorExists('button[type="submit"]');
+        $this->assertSelectorTextContains('button[type="submit"]', 'Filter');
     }
     
     public function testListUsersEmptyResult(): void
@@ -1512,6 +1518,14 @@ class UserControllerTest extends WebTestCase
         // Check if both users with matching last name are displayed
         $this->assertSelectorTextContains('body', 'JAN KOWALSKI');
         $this->assertSelectorTextContains('body', 'ANNA KOWALSKA');
+        
+        // Check if filter form is displayed with pre-filled value
+        $lastNameInput = $crawler->filter('input[name="last_name"]');
+        $this->assertEquals('KOWALSK', $lastNameInput->attr('value'));
+        
+        // Check if "Clear Filter" button is displayed when filter is active
+        $this->assertSelectorExists('a[href*="/users"]');
+        $this->assertSelectorTextContains('a[href*="/users"]', 'Clear Filter');
     }
     
     public function testListUsersWithLastNameFilterAndSorting(): void
@@ -1608,5 +1622,13 @@ class UserControllerTest extends WebTestCase
         // Check if both users are displayed
         $this->assertSelectorTextContains('body', 'JAN KOWALSKI');
         $this->assertSelectorTextContains('body', 'ANNA NOWAK');
+        
+        // Check if filter form is displayed with empty value
+        $lastNameInput = $crawler->filter('input[name="last_name"]');
+        $this->assertEquals('', $lastNameInput->attr('value'));
+        
+        // Check if "Clear Filter" button is NOT displayed when no filter is active
+        $clearFilterLinks = $crawler->filter('a:contains("Clear Filter")');
+        $this->assertCount(0, $clearFilterLinks);
     }
 }

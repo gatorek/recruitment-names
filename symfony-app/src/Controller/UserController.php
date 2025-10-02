@@ -208,7 +208,8 @@ class UserController extends AbstractController
             return $this->render('user/list.html.twig', [
                 'users' => $users,
                 'currentSort' => $sortOrder,
-                'currentSortField' => $sortField
+                'currentSortField' => $sortField,
+                'currentLastNameFilter' => $lastName
             ]);
             
         } catch (\InvalidArgumentException $e) {
@@ -218,6 +219,7 @@ class UserController extends AbstractController
                 'users' => [],
                 'currentSort' => null,
                 'currentSortField' => null,
+                'currentLastNameFilter' => null,
                 'error' => $e->getMessage()
             ]);
         } catch (\Exception $e) {
@@ -227,6 +229,7 @@ class UserController extends AbstractController
                 'users' => [],
                 'currentSort' => null,
                 'currentSortField' => 'first_name',
+                'currentLastNameFilter' => null,
                 'error' => $e->getMessage()
             ]);
         }
