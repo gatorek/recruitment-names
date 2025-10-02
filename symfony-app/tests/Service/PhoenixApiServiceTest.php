@@ -757,6 +757,81 @@ class PhoenixApiServiceTest extends TestCase
         });
     }
 
+    public function testDelete(): void
+    {
+        $mockResponse = new MockResponse('', [
+            'http_code' => 204
+        ]);
+
+        $httpClient = $this->createMockHttpClientForDelete(1, $mockResponse);
+        $service = new PhoenixApiService($httpClient, 'localhost', 4000);
+
+        $result = $service->delete(1);
+
+        $this->assertTrue($result);
+    }
+
+    public function testDeleteNotFound(): void
+    {
+        $mockResponse = new MockResponse('', [
+            'http_code' => 404
+        ]);
+
+        $httpClient = $this->createMockHttpClientForDelete(999, $mockResponse);
+        $service = new PhoenixApiService($httpClient, 'localhost', 4000);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('API returned status code: 404');
+
+        $service->delete(999);
+    }
+
+    public function testDeleteApiError(): void
+    {
+        $mockResponse = new MockResponse('', [
+            'http_code' => 500
+        ]);
+
+        $httpClient = $this->createMockHttpClientForDelete(1, $mockResponse);
+        $service = new PhoenixApiService($httpClient, 'localhost', 4000);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('API returned status code: 500');
+
+        $service->delete(1);
+    }
+
+    public function testDeleteWithWrongStatusCode(): void
+    {
+        $mockResponse = new MockResponse('', [
+            'http_code' => 200 // Wrong status code, should be 204
+        ]);
+
+        $httpClient = $this->createMockHttpClientForDelete(1, $mockResponse);
+        $service = new PhoenixApiService($httpClient, 'localhost', 4000);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('API returned status code: 200');
+
+        $service->delete(1);
+    }
+
+    /**
+     * Create MockHttpClient for delete operations with URL verification
+     */
+    private function createMockHttpClientForDelete(int $expectedId, MockResponse $mockResponse): MockHttpClient
+    {
+        return new MockHttpClient(function ($method, $url, $options) use ($expectedId, $mockResponse) {
+            // Check HTTP method
+            $this->assertEquals('DELETE', $method);
+            
+            // Check URL
+            $this->assertEquals("http://localhost:4000/users/{$expectedId}", $url);
+
+            return $mockResponse;
+        });
+    }
+
     /**
      * Create MockHttpClient without query parameters verification (for empty/no params)
      */

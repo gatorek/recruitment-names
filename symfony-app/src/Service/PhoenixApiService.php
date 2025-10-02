@@ -222,6 +222,38 @@ class PhoenixApiService
     }
 
     /**
+     * Delete a user
+     *
+     * @param int $id User ID to delete
+     * @return bool True if deletion was successful
+     * @throws \Exception
+     */
+    public function delete(int $id): bool
+    {
+        $url = $this->buildUrl("/users/{$id}");
+        
+        try {
+            $response = $this->httpClient->request('DELETE', $url, [
+                'headers' => [
+                    'Accept' => 'application/json',
+                ],
+                'timeout' => 30,
+            ]);
+
+            $statusCode = $response->getStatusCode();
+            
+            if ($statusCode !== 204) {
+                throw new \Exception("API returned status code: {$statusCode}");
+            }
+
+            return true;
+
+        } catch (ClientExceptionInterface|DecodingExceptionInterface|RedirectionExceptionInterface|ServerExceptionInterface|TransportExceptionInterface $e) {
+            throw new \Exception("Failed to delete user: " . $e->getMessage(), 0, $e);
+        }
+    }
+
+    /**
      * Build query parameters string from filters array
      */
     private function buildQueryParams(array $filters): string
