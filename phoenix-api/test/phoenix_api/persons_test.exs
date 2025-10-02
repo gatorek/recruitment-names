@@ -518,6 +518,19 @@ defmodule PhoenixApi.PersonsTest do
       assert first_names == ["Alice", "Bob", "Charlie"]
     end
 
+    test "sorts by first_name honoring polish letters" do
+      create_test_users([
+        %{first_name: "Łukasz", last_name: "Zdun", gender: :male, birthdate: ~D[1995-05-15]},
+        %{first_name: "Manfred", last_name: "Szewc", gender: :male, birthdate: ~D[1985-12-10]},
+        %{first_name: "Leon", last_name: "Kowal", gender: :male, birthdate: ~D[1990-01-01]}
+      ])
+
+      {:ok, result} = Persons.list_persons(%{sort: :first_name, order: :asc})
+
+      first_names = Enum.map(result, & &1.first_name)
+      assert first_names == ["Leon", "Łukasz", "Manfred"]
+    end
+
     test "sorts by birthdate descending" do
       create_test_users([
         %{first_name: "John", last_name: "Doe", gender: :male, birthdate: ~D[1990-01-01]},
