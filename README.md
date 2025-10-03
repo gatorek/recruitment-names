@@ -82,3 +82,4 @@ Things, that could/should be done in the future
 - [ ] fetch gov api data in paralel
 - [ ] retry failed gov api calls
 - [ ] create production configuration with applications in prod mode, elixir release, etc
+- [ ] add e2e tests
